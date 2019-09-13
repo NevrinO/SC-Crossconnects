@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Cross-Connect Runs</title>
+        <meta charset="UTF-8">
+    </head>
+	<style>
+		input:invalid {
+			background-color: #ff6060;
+		}
+	</style>
+    <body>
+        <h4>Starting Rack</h4>
+        <input type="text" id="start" name="start" value="" maxlength="5" pattern="[a-zA-Z]{2}[0-9]{3}" \> add cab # here in format of 'AB123'<br>
+		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="full_cab" checked>Full
+		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="half_cab">Half
+		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="quarter_cab">Quarter
+		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="network_rack">Network
+		<input type="text" id="s_value" name="s_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
+        <h4>Ending Rack</h4>
+        <input type="text" id="end" name="end" value="" maxlength="5" pattern="[a-zA-Z]{2}[0-9]{3}"> add cab # here in format of 'AB123'<br>
+		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="full_cab" checked>Full
+		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="half_cab">Half
+		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="quarter_cab">Quarter
+		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="network_rack">Network
+		<input type="text" id="e_value" name="e_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
+        <!--<h4>Network Panel</h4>
+        <input type="checkbox" id="network" checked>
+        <input type="text" id="panel" value=1> panel # - if going cab to network cage add number of panel to get proper length. Uncheck box if going from cab to cab.--><br>
+        <h4>Path</h4>
+        <select id="room" onchange="changeRoom();">
+            <option value="10">CR-10</option>
+            <option value="14" selected>CR-14</option>
+            <option value="28">CR-28</option>
+        </select>
+        <select id="path">
+        </select>
+        <p>Choose which room and then which path you are running the cable along. For diversity pick one then after getting length change path before getting next. All lengths stay until page is reloaded</p>
+        <h4>Slack</h4>
+        <input type="text" id="slack" name="slack" value=0>ft - add extra length here if you need to.<br><br>
+        <input type="button" name="calc" onclick="getLength()" value="Get Length" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
+        <h3>--Results--</h3>
+        <p id="result"></p><br><br>
+        <h5>---- NOTES ----</h5>
+        <ul>
+            <li>this is a work in progress - <b>USE AT YOUR OWN RISK!!!</b></li>
+            <li>It is <b>highly recommended</b> to double check length, at least for now!</li>
+            <li>there are almost no checks on what is entered so feed it crazy stuff and it will give you crazy answers</li>
+            <li>there are no checks to ensure the path is in the same room as the cabs so ensure the correct room and path are selected or you may get some interesting results</li>
+            <li><b>Do not</b> use for network to network as the lengths assume the cable will be ran along fiber-tray/ladder-rack.</li> <!-- plan on updating for net to net runs and paths -->
+            <li><b>Do not</b> use for in the same cab as it will be too long.</li>
+            <li><b>Do not</b> use for precabled (under floor). These are for cables ran overhead using ether the fiber tray or the ladder-rack.</li>
+            <li>These expect the cab's patch panel to be in U46 (+/- 1U should have no effect) and so if needed to run down lower add the distance to the <i>Slack</i> field</li>
+            <li>Some slack is added by default to deal with cabs not being exactly lined up with tiles. this should leave a run with 1-3ft of extra cable depending on where both cabs are. This extra can be ate up easily thus assume for now that this is minimum length.</li>
+            <li>Starting rack and Ending rack are case insensitive</li>
+            <li>order of start cab and end cab does not matter (or at least should not)</li>
+            <li>if more then 1 backtrack path is required to reach cab add length from end cab to that backtrack point x2 to the slack field for each additional backtrack (at this point it might be easier to do by hand)</li>
+            <li>Feel free to slack me if you have any questions/suggestions. (@bstratton)</li>
+
+        </ul>
+    </body>
+    <script>
+        //add paths and rooms to this function if needed. Option('[NAME]', '[where is ladder rack/fiber tray followed by height adjustment 4 works for lowest ladder rack which equates to 2ft on each end 6 works for normal fiber tray and 8 for upper fiber tray.]')
+    function changeRoom(){
+        var select = document.getElementById("path");
+        select.options.length = 0;
+        if(document.getElementById("room").value == 14){
+            select.options[select.options.length] = new Option('Fiber South (GD)', 'GD8');
+            select.options[select.options.length] = new Option('Fiber North (FM)', 'FM8');
+            select.options[select.options.length] = new Option('Old Fiber South (FZ)', 'FZ6');
+            select.options[select.options.length] = new Option('Old Fiber North (FW)', 'FW6');
+            select.options[select.options.length] = new Option('Copper South (FZ)', 'FZ4');
+            select.options[select.options.length] = new Option('Copper North (FW)', 'FW4');
+        }
+        else if(document.getElementById("room").value == 10){
+            select.options[select.options.length] = new Option('Fiber East (114)', '146');
+            select.options[select.options.length] = new Option('Fiber West (118)', '186');
+            select.options[select.options.length] = new Option('Copper East (114)', '144');
+            select.options[select.options.length] = new Option('Copper West (118)', '184');
+        }
+        else if(document.getElementById("room").value == 28){
+            select.options[select.options.length] = new Option('Fiber South (IS)', 'IS6');
+            select.options[select.options.length] = new Option('Fiber North (IF)', 'IF6');
+            select.options[select.options.length] = new Option('Copper South (IS)', 'IS4');
+            select.options[select.options.length] = new Option('Copper North (IF)', 'IF4');
+        }
+    }
+    // in case the document is already rendered
+        if (document.readyState!='loading') changeRoom();
+        // modern browsers
+        else if (document.addEventListener) document.addEventListener('DOMContentLoaded', changeRoom);
+        // IE <= 8
+        else document.attachEvent('onreadystatechange', function(){
+            if (document.readyState=='complete') changeRoom();
+        });
+        /*document.getElementById('panel').disabled = !document.getElementById('network').checked;*/
+    </script>
+    <script>
+        /*document.getElementById('network').onchange = function() {
+            document.getElementById('panel').disabled = !this.checked;
+        };*/
+		function radiochange(loc, val){
+			if(val == "full_cab"){
+				document.getElementById(loc).disabled = true;
+			}
+			else{
+				document.getElementById(loc).disabled = false;
+			}
+		}
+    </script>
+    <script>
+    function getLength() {
+        var tileSize = 2; //size of the tiles used to get lengths in between cabs
+        var offset = 4; //Added extra length because cabs don't perfectly line up with tiles
+        var slack = parseInt(document.getElementById("slack").value,10); // adds any extra lenght requested by the user
+        var len = parseInt(document.getElementById("path").value.slice(2,3),10) + offset + slack; //variable keeping track of distance. gets its initial values from element with id="path".
+        var section = 0;//used as simple way to make it loop through twice to cover both sides of runs in between fiber trays
+        var start = document.getElementById("start").value.toUpperCase(); // saves starting cab to a var
+        var end = document.getElementById("end").value.toUpperCase(); // saves ending cab to a var
+        var sameRow = false;
+        if (start.length != 5 || end.length != 5 /*|| (document.getElementById("panel").value < 1 && document.getElementById("network").checked == true)*/){ // ensures length of start/end is correct. put in because without a check if button pressed without values set it causes endless loop.
+            // this just prevents some of the easiest mistakes. this doesnt mean bad data can not be passed and cause issues.
+            alert("Warning! Incorrect parameters!");
+            return null;
+        }
+        var tempChar = start.slice(0,2); // takes first part of cab to iterate through
+        var path = document.getElementById("path").value.toUpperCase().slice(0,2); // gets first part of ladder rack locations to use to traverse paths.
+        if (document.getElementById("room").value == 10){ // because cr-10 rows run perpendicular to other rooms had to make special rules for it. should be valid for any rooms with east/west lined up rows.
+            if (start.slice(0,2) == end.slice(0,2)){
+                len += (Math.abs(start.slice(2,5) - end.slice(2,5)) * tileSize)
+                sameRow = true;
+            }
+            else{
+                len += ((Math.abs(start.slice(3,5) - document.getElementById("path").value.slice(0,2)) + Math.abs(document.getElementById("path").value.slice(0,2) - end.slice(3,5))) * tileSize); // gets from starting cab to ladder rack as absolute value then from ladder rack to end cab as absolute value. then takes those and multiplies by size of the tiles to get that portion of the run.
+            }
+            path = end.slice(0,2); // this is so it gets from starting row to end row as the back and forth are taken care of above.
+            len += azRun(tempChar,path,tileSize);
+        }
+        else{
+            var tempLen = (Math.abs(start.slice(2,5) - end.slice(2,5)) * tileSize); // this is the across cabs length for all rooms where rows run north and south.
+            if (tempLen == 0){
+                len += azRun(tempChar,end.slice(0,2),tileSize); // row run if in same row
+                sameRow = true;
+            }
+            else{
+                len += tempLen;
+                len += azRun(tempChar,path,tileSize); // first half of row run
+                len += azRun(path,end,tileSize); // second half of row run
+            }
+        }
+        /*//this adds the height of the network cage panels to calculate that for user 
+        if (document.getElementById("network").checked == true){
+            len += Math.ceil(document.getElementById("panel").value * 0.7);
+        }*/
+		
+		// this code if for adding lengths for half cabs quarter cabs and network panels
+		var s_cab = checkRadio("s_rack");
+		var e_cab = checkRadio("e_rack");
+		var s_value = document.getElementById("s_value").value.toUpperCase();
+		var e_value = document.getElementById("e_value").value.toUpperCase();
+		var tempTextA = "";
+		var tempTextB = "";
+		if (s_cab == "network_rack"){
+			len += Math.ceil(document.getElementById("s_value").value * 0.7);
+			tempTextA = ":" + document.getElementById("s_value").value;
+		}
+		if ((s_cab == "half_cab" || s_cab == "quarter_cab") && s_value == "A"){
+			tempTextA = "A";
+		}
+		if (s_cab == "half_cab" && s_value == "B"){
+			len += Math.ceil(2 * 1.8);
+			tempTextA = "B";
+		}
+		if (s_cab == "quarter_cab" && s_value == "B"){
+			len += Math.ceil(1 * 1.8);
+			tempTextA = "B";
+		}
+		if (s_cab == "quarter_cab" && s_value == "C"){
+			len += Math.ceil(2 * 1.8);
+			tempTextA = "C";
+		}
+		if (s_cab == "quarter_cab" && s_value == "D"){
+			len += Math.ceil(3 * 1.8);
+			tempTextA = "D";
+		}
+		if ((e_cab == "half_cab" || e_cab == "quarter_cab") && e_value == "A"){
+			tempTextB = "A";
+		}
+		if (e_cab == "network_rack"){
+			len += Math.ceil(document.getElementById("e_value").value * 0.7);
+			tempTextB = ":" + document.getElementById("e_value").value;
+		}
+		if (e_cab == "half_cab" && e_value == "B"){
+			len += Math.ceil(2 * 1.8);
+			tempTextB = "B";
+		}
+		if (e_cab == "quarter_cab" && e_value == "B"){
+			len += Math.ceil(1 * 1.8);
+			tempTextB = "B";
+		}
+		if (e_cab == "quarter_cab" && e_value == "C"){
+			len += Math.ceil(2 * 1.8);
+			tempTextB = "C";
+		}
+		if (e_cab == "quarter_cab" && e_value == "D"){
+			len += Math.ceil(3 * 1.8);
+			tempTextB = "D";
+		}
+		
+		// this code is to display the results
+        var temp = document.getElementById("result").innerHTML; // grabs already added data to prevent overwrite.
+        // this sets the results paragraph to whatever the calculations determine the length to be
+        temp += " The cable length needed to go from " + start + tempTextA + " to " + end + tempTextB
+		if (sameRow){
+            document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
+        }
+        else{
+            document.getElementById("result").innerHTML = temp + " using path: " + document.getElementById("path").options[document.getElementById("path").selectedIndex].text + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
+        }
+    }
+	function checkRadio(element){
+		var radios = document.getElementsByName(element);
+
+		for (var i = 0, length = radios.length; i < length; i++)
+		{
+			if (radios[i].checked)
+			{
+				console.log(radios[i].value);
+				return(radios[i].value);
+			}
+		}
+	}
+    function azRun(start,end,tileSize) {
+        var tempLen = 0;
+        while(start.charCodeAt(0) != end.charCodeAt(0) || start.charCodeAt(1) != end.charCodeAt(1)){ // this while counts from start point to end point. usually this runs to/from path
+                if (start.charCodeAt(0) < end.charCodeAt(0) || (start.charCodeAt(0) == end.charCodeAt(0) && start.charCodeAt(1) < end.charCodeAt(1))){ // this moves up through letters
+                    start = nextChar(start);
+                    tempLen += tileSize;
+                }
+                else if (start.charCodeAt(0) > end.charCodeAt(0) || start.charCodeAt(1) > end.charCodeAt(1)){ // this moves down through letters
+                    start = prevChar(start);
+                    tempLen += tileSize;
+                }
+            }
+        return tempLen;
+    }
+    function nextChar(c) {
+        var u = c.toUpperCase();
+        if (same(u,'Z')){
+            var txt = '';
+            var i = u.length;
+            while (i--) {
+                txt += 'A';
+            }
+            return (txt+'A');
+        } else {
+            var p = "";
+            var q = "";
+            if(u.length > 1){
+                p = u.substring(0, u.length - 1);
+                q = String.fromCharCode(p.slice(-1).charCodeAt(0));
+            }
+            var l = u.slice(-1).charCodeAt(0);
+            var z = nextLetter(l);
+            if(z==='A'){
+                return p.slice(0,-1) + nextLetter(q.slice(-1).charCodeAt(0)) + z;
+            } else {
+                return p + z;
+            }
+        }
+    }
+    function nextLetter(l){
+        if(l<90){
+            return String.fromCharCode(l + 1);
+        }
+        else{
+            return 'A';
+        }
+    }
+    function prevChar(c) {
+        var u = c.toUpperCase();
+        if (same(u,'A')){
+            var txt = '';
+            var i = u.length;
+            while (i--) {
+                txt += 'Z';
+            }
+            return (txt+'Z');
+        } else {
+            var p = "";
+            var q = "";
+            if(u.length > 1){
+                p = u.substring(0, u.length - 1);
+                q = String.fromCharCode(p.slice(-1).charCodeAt(0));
+            }
+            var l = u.slice(-1).charCodeAt(0);
+            var z = prevLetter(l);
+            if(z==='Z'){
+                return p.slice(0,-1) + prevLetter(q.slice(-1).charCodeAt(0)) + z;
+            } else {
+                return p + z;
+            }
+        }
+    }
+    function prevLetter(l){
+        if(l>65){
+            return String.fromCharCode(l - 1);
+        }
+        else{
+            return 'Z';
+        }
+    }
+    function same(str,char){
+        var i = str.length;
+        while (i--) {
+            if (str[i]!==char){
+                return false;
+            }
+        }
+        return true;
+    }
+    function convertFeetToMeters(feet) {
+        if (feet < (0)) {
+            return 'input cannot be less than zero';
+        } else {
+            return (feet*0.3048); // interestingly enough this is accurate till nearly 2.5 times of the circumference of the earth to less than 2m difference
+        }
+    }
+	function roundFloat(value, toNearest, fixed) {
+		return (Math.ceil(value / toNearest) * toNearest).toFixed(fixed);
+	}
+    </script>
+</html>
