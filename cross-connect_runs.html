@@ -49,8 +49,8 @@
             <li>there are no checks to ensure the path is in the same room as the cabs so ensure the correct room and path are selected or you may get some interesting results</li>
             <li><b>Do not</b> use for network to network as the lengths assume the cable will be ran along fiber-tray/ladder-rack.</li> <!-- plan on updating for net to net runs and paths -->
             <li><b>Do not</b> use for in the same cab as it will be too long.</li>
-            <li><b>Do not</b> use for precabled (under floor). These are for cables run overhead.</li>
-            <li>These expect cab patch panels are in U46 (+/- 1U should have no effect) and so if needed to run down lower add the distance to the <i>Slack</i> field</li>
+            <li><b>Do not</b> use for precabled (under floor). These are for cables ran overhead using ether the fiber tray or the ladder-rack.</li>
+            <li>These expect the cab's patch panel to be in U46 (+/- 1U should have no effect) and so if needed to run down lower add the distance to the <i>Slack</i> field</li>
             <li>Some slack is added by default to deal with cabs not being exactly lined up with tiles. this should leave a run with 1-3ft of extra cable depending on where both cabs are. This extra can be ate up easily thus assume for now that this is minimum length.</li>
             <li>Starting rack and Ending rack are case insensitive</li>
             <li>order of start cab and end cab does not matter (or at least should not)</li>
@@ -152,6 +152,8 @@
         if (document.getElementById("network").checked == true){
             len += Math.ceil(document.getElementById("panel").value * 0.7);
         }*/
+		
+		// this code if for adding lengths for half cabs quarter cabs and network panels
 		var s_cab = checkRadio("s_rack");
 		var e_cab = checkRadio("e_rack");
 		var s_value = document.getElementById("s_value").value.toUpperCase();
@@ -205,14 +207,15 @@
 			tempTextB = "D";
 		}
 		
+		// this code is to display the results
         var temp = document.getElementById("result").innerHTML; // grabs already added data to prevent overwrite.
         // this sets the results paragraph to whatever the calculations determine the length to be
         temp += " The cable length needed to go from " + start + tempTextA + " to " + end + tempTextB
 		if (sameRow){
-            document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + Math.ceil(convertFeetToMeters(len)) + "m<br>";
+            document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
         else{
-            document.getElementById("result").innerHTML = temp + " using path: " + document.getElementById("path").options[document.getElementById("path").selectedIndex].text + " is: " + len + "ft or " + Math.ceil(convertFeetToMeters(len)) + "m<br>";
+            document.getElementById("result").innerHTML = temp + " using path: " + document.getElementById("path").options[document.getElementById("path").selectedIndex].text + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
     }
 	function checkRadio(element){
@@ -238,8 +241,6 @@
                     start = prevChar(start);
                     tempLen += tileSize;
                 }
-                //var temp = document.getElementById("result").innerHTML;
-                //document.getElementById("result").innerHTML = temp + " " + start;
             }
         return tempLen;
     }
@@ -325,5 +326,8 @@
             return (feet*0.3048); // interestingly enough this is accurate till nearly 2.5 times of the circumference of the earth to less than 2m difference
         }
     }
+	function roundFloat(value, toNearest, fixed) {
+		return (Math.ceil(value / toNearest) * toNearest).toFixed(fixed);
+	}
     </script>
 </html>
