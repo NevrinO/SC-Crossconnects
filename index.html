@@ -12,21 +12,30 @@
     <body>
         <h4>Starting Rack</h4>
         <input type="text" id="start" name="start" value="" maxlength="16"\> add cab # here in format of 'AB123'<br>
-		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="full_cab" checked>Full
+        <select id="s_rack" onchange="cabChange('s_value',this.value);">
+            <option value="full_cab" selected>Full</option>
+            <option value="half_cab">Half</option>
+            <option value="quarter_cab">Quarter</option>
+            <option value="network_rack">Network</option>
+        </select>
+		<!--<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="full_cab" checked>Full
 		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="half_cab">Half
 		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="quarter_cab">Quarter
-		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="network_rack">Network
+		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="network_rack">Network -->
 		<input type="text" id="s_value" name="s_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
         <h4>Ending Rack</h4>
         <input type="text" id="end" name="end" value="" maxlength="16"\> add cab # here in format of 'AB123'<br>
-		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="full_cab" checked>Full
+        <select id="e_rack" onchange="cabChange('e_value',this.value);">
+            <option value="full_cab" selected>Full</option>
+            <option value="half_cab">Half</option>
+            <option value="quarter_cab">Quarter</option>
+            <option value="network_rack">Network</option>
+        </select>
+		<!-- <input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="full_cab" checked>Full
 		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="half_cab">Half
 		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="quarter_cab">Quarter
-		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="network_rack">Network
-		<input type="text" id="e_value" name="e_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
-        <!--<h4>Network Panel</h4>
-        <input type="checkbox" id="network" checked>
-        <input type="text" id="panel" value=1> panel # - if going cab to network cage add number of panel to get proper length. Uncheck box if going from cab to cab.--><br>
+		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="network_rack">Network -->
+		<input type="text" id="e_value" name="e_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)<br>
         <h4>Path</h4>
         <select id="room" onchange="changeRoom();">
             <option value="10">CR-10</option>
@@ -98,7 +107,7 @@
         /*document.getElementById('panel').disabled = !document.getElementById('network').checked;*/
     </script>
     <script>
-		function radiochange(loc, val){
+		function cabChange(loc, val){
 			if(val == "full_cab"){
 				document.getElementById(loc).disabled = true;
 			}
@@ -154,8 +163,8 @@
 
 		
 		// this code if for adding lengths for half cabs quarter cabs and network panels
-		var s_cab = checkRadio("s_rack");
-		var e_cab = checkRadio("e_rack");
+		var s_cab = document.getElementById("s_rack").value;
+		var e_cab = document.getElementById("e_rack").value;
 		var s_value = document.getElementById("s_value").value.toUpperCase();
 		var e_value = document.getElementById("e_value").value.toUpperCase();
 		var tempTextA = "";
