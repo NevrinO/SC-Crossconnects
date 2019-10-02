@@ -385,4 +385,33 @@
 	var parseCsv = new uploadCsv();
 	parseCsv.getCsv();
 	</script>
+	<script>
+	getRoom(loc){
+		if (loc >= "CT105" && loc <= "EW129"){
+			return 10;
+		}
+		if (loc >= "FJ132" && loc <= "GN185"){
+			return 14;
+		}
+		if (loc >= "HM085" && loc <= "IV152"){
+			return 28;
+		}
+		return 0;
+	}
+	getPath(room, type, path){
+		if (room == 10){
+			if (type == "copper"){
+				if (path == "e"){
+					'Copper East (114)', '144'
+				}
+				if (path == "w"){
+					'Copper West (118)', '184'
+				}
+				else{
+					'ERROR'
+				}
+			}
+		}
+	}
+	</script>
 </html>
