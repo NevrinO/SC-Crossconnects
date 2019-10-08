@@ -244,8 +244,8 @@
 		var tempTextA = "";
 		var tempTextB = "";
 		if (s_cab == "network_rack"){
-			len += Math.ceil(document.getElementById("s_value").value * 0.7);
-			tempTextA = ":" + document.getElementById("s_value").value;
+			len += Math.ceil(sValue * 0.7);
+			tempTextA = ":" + sValue;
 		}
 		if ((s_cab == "half_cab" || s_cab == "quarter_cab") && s_value == "A"){
 			tempTextA = "A";
@@ -270,8 +270,8 @@
 			tempTextB = "A";
 		}
 		if (e_cab == "network_rack"){
-			len += Math.ceil(document.getElementById("e_value").value * 0.7);
-			tempTextB = ":" + document.getElementById("e_value").value;
+			len += Math.ceil(eValue * 0.7);
+			tempTextB = ":" + eValue;
 		}
 		if (e_cab == "half_cab" && e_value == "B"){
 			len += Math.ceil(2 * 1.8);
@@ -548,7 +548,7 @@
 	}
 	function getCabType(loc){
 		if (cabRangeCheck("EU108", "EU122", loc) || cabRangeCheck("FM155", "GD155", loc) || cabRangeCheck("IG085", "IR089", loc)){
-			return ["network" ,loc.substring(6, loc.lastIndexOf(":"))];
+			return ["network_rack" ,loc.substring(6, loc.lastIndexOf(":"))];
 		}
 		if (cabRangeCheck("FR132A", "FS132B", loc)||cabRangeCheck("FV132A", "GD132B", loc)){
 			return ["half_cab", loc.slice(5,6)];
