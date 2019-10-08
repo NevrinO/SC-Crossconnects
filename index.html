@@ -144,7 +144,7 @@
 			}
 
 			//console.table(parsedata);
-			//console.log(parsedata);
+			console.log(parsedata);
 			return parsedata;
 		}
 	
@@ -160,7 +160,6 @@
 	
 	function calcResults() {
 		if(csvData != null){
-			console.log(csvData);
 			standardizeCSV(csvData);
 			console.log(csvData);
 			for (i = 1; i < csvData.length -1; i++){
@@ -173,13 +172,19 @@
 						temp.push(getCabType(csvData[i][0]));
 						temp.push(getCabType(csvData[i][1]));
 						console.log(temp);
+						//console.log(temp[1][1].slice(2,3));
+						if (!temp.includes("ERROR") && !temp[1].includes("ERROR") && !temp[2].includes("ERROR") && !temp[3].includes("ERROR"))
+							getLength(csvData[i][0], csvData[i][1], temp[0], temp[1][1], temp[1][0], csvData[i][4], temp[2][0], temp[3][0], temp[2][1], temp[3][1]);
+						else
+							errorInCSV(csvData[i][0], csvData[i][1]);
 					}
 					else
-						console.log("not in same room");
+						errorInCSV(csvData[i][0], csvData[i][1]);
 				}
 				else{
-					result_values.push([csvData[i][0], csvData[i][0], "invalid", "invalid", "CR-" + csvData[i][2], csvData[i][3]]);
+					//result_values.push([csvData[i][0], csvData[i][0], "invalid", "invalid", "CR-" + csvData[i][2], csvData[i][3]]);
 					console.log(csvData[i][0] + " to " + csvData[i][1] + " is NOT valid");
+					errorInCSV(csvData[i][0], csvData[i][1]);
 				}
 			}
 			csvData = null;
@@ -190,10 +195,10 @@
 			if(isNaN(parseFloat(document.getElementById("slack").value))){
 				document.getElementById("slack").value = 0;
 			}
-			getLength(document.getElementById("start").value.toUpperCase(),document.getElementById("end").value.toUpperCase(),document.getElementById("room").value,document.getElementById("path").value.toUpperCase(), parseInt(document.getElementById("slack").value,10),document.getElementById("s_rack").value,document.getElementById("e_rack").value, document.getElementById("s_value").value.toUpperCase(), document.getElementById("e_value").value.toUpperCase());
+			getLength(document.getElementById("start").value.toUpperCase(),document.getElementById("end").value.toUpperCase(),document.getElementById("room").value,document.getElementById("path").value.toUpperCase(), document.getElementById("path").options[document.getElementById("path").selectedIndex].text, parseInt(document.getElementById("slack").value,10),document.getElementById("s_rack").value,document.getElementById("e_rack").value, document.getElementById("s_value").value.toUpperCase(), document.getElementById("e_value").value.toUpperCase());
 		}
 	}
-    function getLength(start, end, room, path, slack, sType, eType, sValue, eValue) {
+    function getLength(start, end, room, path, pathText, slack, sType, eType, sValue, eValue) {
         var tileSize = 2; //size of the tiles used to get lengths in between cabs
         var offset = 4; //Added extra length because cabs don't perfectly line up with tiles
         var len = parseInt(path.slice(2,3),10) + offset + slack; //variable keeping track of distance. gets its initial values from element with id="path".
@@ -289,14 +294,14 @@
 		console.log(len);
         var temp = document.getElementById("result").innerHTML; // grabs already added data to prevent overwrite.
         // this sets the results paragraph to whatever the calculations determine the length to be
-        temp += " The cable length needed to go from " + start + tempTextA + startPort + " to " + end + tempTextB + endPort
+        temp += " The cable length needed to go from " + start + sValue + startPort + " to " + end + eValue + endPort;
 		if (sameRow){
             document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
         else{
-            document.getElementById("result").innerHTML = temp + " using path: " + document.getElementById("path").options[document.getElementById("path").selectedIndex].text + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
+            document.getElementById("result").innerHTML = temp + " using path: " + pathText + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
-		result_values.push([start + tempTextA + startPort, end  + tempTextB + endPort, len + "ft", roundFloat(convertFeetToMeters(len),0.25,2) + "m", "CR-" + document.getElementById("room").value, document.getElementById("path").options[document.getElementById("path").selectedIndex].text])
+		result_values.push([start + tempTextA + startPort, end  + tempTextB + endPort, len + "ft", roundFloat(convertFeetToMeters(len),0.25,2) + "m", "CR-" + room, pathText]);
 		label_values.push([start + tempTextA + startPort +"\\n"+ end + tempTextB + endPort]);
 		//console.log(label_values.toString());
     }
@@ -424,6 +429,8 @@
 	
 	<script>
 	function standardizeCSV(data){
+		var typePattern = /^copper$|^fiber$/;
+		var pathPattern = /^[n,s,e,w]$/;
 		for (i = 1; i < data.length -1; i++){
 			data[i][0] = data[i][0].toUpperCase();
 			data[i][1] = data[i][1].toUpperCase();
@@ -433,6 +440,8 @@
 			data[i][4] = parseInt(data[i][4]); 
 			if(data[i][0].slice(4,5) == ":") data[i][0] = [data[i][0].slice(0,2),0,data[i][0].slice(2,)].join('');
 			if(data[i][1].slice(4,5) == ":") data[i][1] = [data[i][1].slice(0,2),0,data[i][1].slice(2,)].join('');
+			if(!typePattern.test(data[i][2])) data[i][2] = "ERROR";
+			if(!pathPattern.test(data[i][3])) data[i][2] = "ERROR";
 		}
 	}
 	function cabRangeCheck(aRange,zRange,value){
@@ -549,5 +558,9 @@
 		}
 		return ["full_cab", ""];
 	}
+	function errorInCSV(start, end){
+		document.getElementById("result").innerHTML += "There is an ERROR in going from " + start + " to " + end + ". Please check CSV formatting.<br>"
+	}
+	
 	</script>
 </html>
