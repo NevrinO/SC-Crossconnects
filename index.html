@@ -294,15 +294,15 @@
 		console.log(len);
         var temp = document.getElementById("result").innerHTML; // grabs already added data to prevent overwrite.
         // this sets the results paragraph to whatever the calculations determine the length to be
-        temp += " The cable length needed to go from " + start + sValue + startPort + " to " + end + eValue + endPort;
+        temp += " The cable length needed to go from " + start + startPort + " to " + end + endPort;
 		if (sameRow){
             document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
         else{
             document.getElementById("result").innerHTML = temp + " using path: " + pathText + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
-		result_values.push([start + tempTextA + startPort, end  + tempTextB + endPort, len + "ft", roundFloat(convertFeetToMeters(len),0.25,2) + "m", "CR-" + room, pathText]);
-		label_values.push([start + tempTextA + startPort +"\\n"+ end + tempTextB + endPort]);
+		result_values.push([start + startPort, end + endPort, len + "ft", roundFloat(convertFeetToMeters(len),0.25,2) + "m", "CR-" + room, pathText]);
+		label_values.push([start + startPort +"\\n"+ end + endPort]);
 		//console.log(label_values.toString());
     }
 	function createCSV(fileArray,fileName){
