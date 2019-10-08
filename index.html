@@ -195,7 +195,11 @@
 			if(isNaN(parseFloat(document.getElementById("slack").value))){
 				document.getElementById("slack").value = 0;
 			}
-			getLength(document.getElementById("start").value.toUpperCase(),document.getElementById("end").value.toUpperCase(),document.getElementById("room").value,document.getElementById("path").value.toUpperCase(), document.getElementById("path").options[document.getElementById("path").selectedIndex].text, parseInt(document.getElementById("slack").value,10),document.getElementById("s_rack").value,document.getElementById("e_rack").value, document.getElementById("s_value").value.toUpperCase(), document.getElementById("e_value").value.toUpperCase());
+			var start = document.getElementById("start").value.toUpperCase();
+			var end = document.getElementById("end").value.toUpperCase();
+			if(start.slice(4,5) == ":") start = [start.slice(0,2),0,start.slice(2,)].join('');
+			if(end.slice(4,5) == ":") end = [end.slice(0,2),0,end.slice(2,)].join('');
+			getLength(start, end,document.getElementById("room").value,document.getElementById("path").value.toUpperCase(), document.getElementById("path").options[document.getElementById("path").selectedIndex].text, parseInt(document.getElementById("slack").value,10),document.getElementById("s_rack").value,document.getElementById("e_rack").value, document.getElementById("s_value").value.toUpperCase(), document.getElementById("e_value").value.toUpperCase());
 		}
 	}
     function getLength(start, end, room, path, pathText, slack, sType, eType, sValue, eValue) {
