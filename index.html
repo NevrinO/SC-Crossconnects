@@ -11,22 +11,31 @@
 	</style>
     <body>
         <h4>Starting Rack</h4>
-        <input type="text" id="start" name="start" value="" maxlength="5" pattern="[a-zA-Z]{2}[0-9]{3}" \> add cab # here in format of 'AB123'<br>
-		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="full_cab" checked>Full
+        <input type="text" id="start" name="start" value="" maxlength="16"\> add cab # here in format of 'AB123'<br>
+        <select id="s_rack" onchange="cabChange('s_value',this.value);">
+            <option value="full_cab" selected>Full</option>
+            <option value="half_cab">Half</option>
+            <option value="quarter_cab">Quarter</option>
+            <option value="network_rack">Network</option>
+        </select>
+		<!--<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="full_cab" checked>Full
 		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="half_cab">Half
 		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="quarter_cab">Quarter
-		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="network_rack">Network
+		<input type="radio" name="s_rack" onchange="radiochange('s_value',this.value);" value="network_rack">Network -->
 		<input type="text" id="s_value" name="s_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
         <h4>Ending Rack</h4>
-        <input type="text" id="end" name="end" value="" maxlength="5" pattern="[a-zA-Z]{2}[0-9]{3}"> add cab # here in format of 'AB123'<br>
-		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="full_cab" checked>Full
+        <input type="text" id="end" name="end" value="" maxlength="16"\> add cab # here in format of 'AB123'<br>
+        <select id="e_rack" onchange="cabChange('e_value',this.value);">
+            <option value="full_cab" selected>Full</option>
+            <option value="half_cab">Half</option>
+            <option value="quarter_cab">Quarter</option>
+            <option value="network_rack">Network</option>
+        </select>
+		<!-- <input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="full_cab" checked>Full
 		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="half_cab">Half
 		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="quarter_cab">Quarter
-		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="network_rack">Network
-		<input type="text" id="e_value" name="e_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
-        <!--<h4>Network Panel</h4>
-        <input type="checkbox" id="network" checked>
-        <input type="text" id="panel" value=1> panel # - if going cab to network cage add number of panel to get proper length. Uncheck box if going from cab to cab.--><br>
+		<input type="radio" name="e_rack" onchange="radiochange('e_value',this.value);" value="network_rack">Network -->
+		<input type="text" id="e_value" name="e_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)<br>
         <h4>Path</h4>
         <select id="room" onchange="changeRoom();">
             <option value="10">CR-10</option>
@@ -41,6 +50,8 @@
         <input type="button" name="calc" onclick="getLength()" value="Get Length" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
         <h3>--Results--</h3>
         <p id="result"></p><br><br>
+		<input type="button" name="cxResult" onclick="createCSV(result_values,'crossconnect_results')" value="Download Results" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
+		<input type="button" name="cxLabel" onclick="createCSV(label_values,'crossconnect_lables')" value="Download Labels" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
         <h5>---- NOTES ----</h5>
         <ul>
             <li>this is a work in progress - <b>USE AT YOUR OWN RISK!!!</b></li>
@@ -96,10 +107,7 @@
         /*document.getElementById('panel').disabled = !document.getElementById('network').checked;*/
     </script>
     <script>
-        /*document.getElementById('network').onchange = function() {
-            document.getElementById('panel').disabled = !this.checked;
-        };*/
-		function radiochange(loc, val){
+		function cabChange(loc, val){
 			if(val == "full_cab"){
 				document.getElementById(loc).disabled = true;
 			}
@@ -109,23 +117,27 @@
 		}
     </script>
     <script>
+	var result_values = [["Start","End","Length (ft)","Length (m)","Room","Path"]];
+	var label_values = [];
     function getLength() {
         var tileSize = 2; //size of the tiles used to get lengths in between cabs
         var offset = 4; //Added extra length because cabs don't perfectly line up with tiles
-        var slack = parseInt(document.getElementById("slack").value,10); // adds any extra lenght requested by the user
+        var slack = parseInt(document.getElementById("slack").value,10); // adds any extra length requested by the user
         var len = parseInt(document.getElementById("path").value.slice(2,3),10) + offset + slack; //variable keeping track of distance. gets its initial values from element with id="path".
         var section = 0;//used as simple way to make it loop through twice to cover both sides of runs in between fiber trays
-        var start = document.getElementById("start").value.toUpperCase(); // saves starting cab to a var
-        var end = document.getElementById("end").value.toUpperCase(); // saves ending cab to a var
-        var sameRow = false;
-        if (start.length != 5 || end.length != 5 /*|| (document.getElementById("panel").value < 1 && document.getElementById("network").checked == true)*/){ // ensures length of start/end is correct. put in because without a check if button pressed without values set it causes endless loop.
-            // this just prevents some of the easiest mistakes. this doesnt mean bad data can not be passed and cause issues.
+        var start = document.getElementById("start").value.toUpperCase().slice(0,5); // saves starting cab to a var
+		var startPort =  document.getElementById("start").value.toUpperCase().slice(5,);
+        var end = document.getElementById("end").value.toUpperCase().slice(0,5); // saves ending cab to a var
+        var endPort =  document.getElementById("end").value.toUpperCase().slice(5,);
+		var sameRow = false;
+        /*if (start.length != 5 || end.length != 5){ // ensures length of start/end is correct. put in because without a check if button pressed without values set it causes endless loop.
+            // this just prevents some of the easiest mistakes. this doesn't mean bad data can not be passed and cause issues.
             alert("Warning! Incorrect parameters!");
             return null;
-        }
+        }*/
         var tempChar = start.slice(0,2); // takes first part of cab to iterate through
         var path = document.getElementById("path").value.toUpperCase().slice(0,2); // gets first part of ladder rack locations to use to traverse paths.
-        if (document.getElementById("room").value == 10){ // because cr-10 rows run perpendicular to other rooms had to make special rules for it. should be valid for any rooms with east/west lined up rows.
+        if (document.getElementById("room").value == 10){ // because CR-10 rows run perpendicular to other rooms had to make special rules for it. should be valid for any rooms with east/west lined up rows.
             if (start.slice(0,2) == end.slice(0,2)){
                 len += (Math.abs(start.slice(2,5) - end.slice(2,5)) * tileSize)
                 sameRow = true;
@@ -148,14 +160,11 @@
                 len += azRun(path,end,tileSize); // second half of row run
             }
         }
-        /*//this adds the height of the network cage panels to calculate that for user 
-        if (document.getElementById("network").checked == true){
-            len += Math.ceil(document.getElementById("panel").value * 0.7);
-        }*/
+
 		
 		// this code if for adding lengths for half cabs quarter cabs and network panels
-		var s_cab = checkRadio("s_rack");
-		var e_cab = checkRadio("e_rack");
+		var s_cab = document.getElementById("s_rack").value;
+		var e_cab = document.getElementById("e_rack").value;
 		var s_value = document.getElementById("s_value").value.toUpperCase();
 		var e_value = document.getElementById("e_value").value.toUpperCase();
 		var tempTextA = "";
@@ -210,14 +219,26 @@
 		// this code is to display the results
         var temp = document.getElementById("result").innerHTML; // grabs already added data to prevent overwrite.
         // this sets the results paragraph to whatever the calculations determine the length to be
-        temp += " The cable length needed to go from " + start + tempTextA + " to " + end + tempTextB
+        temp += " The cable length needed to go from " + start + tempTextA + startPort + " to " + end + tempTextB + endPort
 		if (sameRow){
             document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
         else{
             document.getElementById("result").innerHTML = temp + " using path: " + document.getElementById("path").options[document.getElementById("path").selectedIndex].text + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
         }
+		result_values.push([start + tempTextA + startPort, end  + tempTextB + endPort, len + "ft", roundFloat(convertFeetToMeters(len),0.25,2) + "m", "CR-" + document.getElementById("room").value, document.getElementById("path").options[document.getElementById("path").selectedIndex].text])
+		label_values.push([start + tempTextA + startPort +"\\n"+ end + tempTextB + endPort]);
+		console.log(label_values.toString());
     }
+	function createCSV(fileArray,fileName){
+		let csvContent = "data:text/csv;charset=utf-8," + fileArray.map(e => e.join(",")).join("\n");
+		var encodedUri = encodeURI(csvContent);
+		var link = document.createElement("a");
+		link.setAttribute("href", encodedUri);
+		link.setAttribute("download", fileName+".csv");
+		document.body.appendChild(link); // Required for FF
+		link.click(); // This will download the csv file.
+	}
 	function checkRadio(element){
 		var radios = document.getElementsByName(element);
 
