@@ -197,8 +197,8 @@
 			}
 			var start = document.getElementById("start").value.toUpperCase();
 			var end = document.getElementById("end").value.toUpperCase();
-			if(start.slice(4,5) == ":") start = [start.slice(0,2),0,start.slice(2,)].join('');
-			if(end.slice(4,5) == ":") end = [end.slice(0,2),0,end.slice(2,)].join('');
+			//if(start.slice(4,5) == ":") start = [start.slice(0,2),0,start.slice(2,)].join('');
+			//if(end.slice(4,5) == ":") end = [end.slice(0,2),0,end.slice(2,)].join('');
 			getLength(start, end,document.getElementById("room").value,document.getElementById("path").value.toUpperCase(), document.getElementById("path").options[document.getElementById("path").selectedIndex].text, parseInt(document.getElementById("slack").value,10),document.getElementById("s_rack").value,document.getElementById("e_rack").value, document.getElementById("s_value").value.toUpperCase(), document.getElementById("e_value").value.toUpperCase());
 		}
 	}
@@ -207,10 +207,24 @@
         var offset = 4; //Added extra length because cabs don't perfectly line up with tiles
         var len = parseInt(path.slice(2,3),10) + offset + slack; //variable keeping track of distance. gets its initial values from element with id="path".
         var section = 0;//used as simple way to make it loop through twice to cover both sides of runs in between fiber trays
-		var startPort =  start.slice(5,);
-        var endPort =  end.slice(5,);
-		var start = start.slice(0,5); // saves starting cab to a var
-		var end = end.slice(0,5); // saves ending cab to a var
+		if(start.slice(2,3) == "0") start = [start.slice(0,2),start.slice(3,)].join('');
+		if(end.slice(2,3) == "0") end = [end.slice(0,2),end.slice(3,)].join('');
+		if(start.slice(4,5) == ":"){
+			var startPort =  start.slice(4,);
+			start = start.slice(0,4);
+		}
+		else{
+			var startPort =  start.slice(5,);
+			start = start.slice(0,5); // saves starting cab to a var
+		}
+		if(end.slice(4,5) == ":"){
+			var endPort =  end.slice(4,);
+			end = end.slice(0,4)
+		}
+		else{
+			var endPort =  end.slice(5,);
+			end = end.slice(0,5); // saves ending cab to a var
+		}
 		var sameRow = false;
         var tempChar = start.slice(0,2); // takes first part of cab to iterate through
 		console.log(path);
