@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -87,8 +88,10 @@
         else if(document.getElementById("room").value == 28){
             select.options[select.options.length] = new Option('Fiber South (IS)', 'IS6');
             select.options[select.options.length] = new Option('Fiber North (IF)', 'IF6');
+			select.options[select.options.length] = new Option('Fiber HIQ (HY)', 'HY6');
             select.options[select.options.length] = new Option('Copper South (IS)', 'IS4');
             select.options[select.options.length] = new Option('Copper North (IF)', 'IF4');
+			select.options[select.options.length] = new Option('Copper HIQ (HY)', 'HY4');
         }
     }
 	function cabChange(loc, val){
@@ -541,6 +544,9 @@
 				if (path == "s"){
 					return['Copper South (IS)', 'IS4'];
 				}
+				if (path == "h"){
+					return['Copper HIQ (HY)', 'HY4'];
+				}
 				else{
 					return['ERROR'];
 				}
@@ -551,6 +557,9 @@
 				}
 				if (path == "s"){
 					return['Fiber South (IS)', 'IS6'];
+				}
+				if (path == "h"){
+					return['Fiber HIQ (HY)', 'HY6'];
 				}
 				else{
 					return['ERROR'];
