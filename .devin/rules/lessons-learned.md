@@ -249,3 +249,15 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 57. User-Facing Imports Must Surface Errors Explicitly
 - **Rule**: When parsing user-uploaded files (CSV, JSON, etc.), every row or record that cannot be processed must be reported to the user with a clear reason, not silently discarded.
 - **Guardrail**: Silent skipping of invalid rows during bulk import is a form of data loss that frustrates users and erodes trust. Design import pipelines to return structured error information (e.g., row number, field, failure reason) alongside successfully processed items. The UI should display a summary like "450 imported, 3 errors" with a downloadable error report. Never use `continue` or silent filtering as the primary error-handling strategy for user-provided data.
+
+### 58. Structural Type Comparison Requires AST or Semantic Analysis
+- **Rule**: When comparing TypeScript type definitions for synchronization validation, use structural comparison (AST parsing) rather than naive string comparison.
+- **Guardrail**: String-based type comparison is fragile to formatting differences (comments, imports, exports, whitespace) that don't affect semantic meaning. Use TypeScript compiler API or a dedicated type comparison tool to compare interface/type definitions structurally. If string comparison must be used, strip all comments, imports, exports, and normalize whitespace aggressively, but prefer AST-based approaches for reliability.
+
+### 59. Event Delta vs Total Distance for Axis Selection
+- **Rule**: When implementing axis selection logic (e.g., "prefer horizontal vs vertical drag"), calculate total distance from the interaction start point, not the delta from the last event.
+- **Guardrail**: Mouse/touch event properties like `movementX` and `movementY` represent the delta since the last event, not cumulative distance. Using these for axis selection causes incorrect behavior when movement speed varies. Store the initial coordinates when the interaction begins and calculate `Math.abs(currentX - startX)` for axis selection. This ensures consistent behavior regardless of movement speed or event frequency.
+
+### 60. Avoid Stale State in Same-Function Updates
+- **Rule**: When a function updates state and then immediately uses that state value for calculation or validation, use the local value directly instead of reading from state.
+- **Guardrail**: React state updates are batched and asynchronous. Reading state immediately after `setState` returns the stale value from the previous render. For calculations that depend on the new value, use the local variable that was passed to `setState` or calculated locally. This prevents validation checks, overlap detection, or other logic from operating on outdated data.
