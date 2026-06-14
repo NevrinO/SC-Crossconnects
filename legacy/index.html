@@ -1,0 +1,593 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Cross-Connect Runs</title>
+        <meta charset="UTF-8">
+    </head>
+	<style>
+		input:invalid {
+			background-color: #ff6060;
+		}
+	</style>
+    <body>
+		<input type="file" accept=".csv" id="uploadedCsv" style="font-size: 20px; border-radius: 6px; padding-left: 0.5em; padding-right: 1em;"> (must be a csv file formatted to match the template)
+		<input type="button" name="cxTemplate" onclick="createCSV(template_values,'crossconnect_template')" value="Download template" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
+		<h5>---or---</h5>
+        <h4>Starting Rack</h4>
+        <input type="text" id="start" name="start" value="" maxlength="18" pattern="(^[a-zA-Z]{2}[0-9]{2,3}[a-dA-D]?:[0-9]{1,2}:([0-9]{1,3}\|[0-9]{1,3}|[0-9]{1,3})$|^[a-zA-Z]{2}[0-9]{2,3}[a-dA-D]?$)"\> add cab # here in format of 'AB123' or 'AB123:1:1|2'<br>
+        <select id="s_rack" onchange="cabChange('s_value',this.value);">
+            <option value="full_cab" selected>Full</option>
+            <option value="half_cab">Half</option>
+            <option value="quarter_cab">Quarter</option>
+            <option value="network_rack">Network</option>
+        </select>
+		<input type="text" id="s_value" name="s_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)
+        <h4>Ending Rack</h4>
+        <input type="text" id="end" name="end" value="" maxlength="18" pattern="(^[a-zA-Z]{2}[0-9]{2,3}[a-dA-D]?:[0-9]{1,2}:([0-9]{1,3}\|[0-9]{1,3}|[0-9]{1,3})$|^[a-zA-Z]{2}[0-9]{2,3}[a-dA-D]?$)"\> add cab # here in format of 'AB123' or 'AB123:1:1|2'<br>
+        <select id="e_rack" onchange="cabChange('e_value',this.value);">
+            <option value="full_cab" selected>Full</option>
+            <option value="half_cab">Half</option>
+            <option value="quarter_cab">Quarter</option>
+            <option value="network_rack">Network</option>
+        </select>
+		<input type="text" id="e_value" name="e_value" value="" size="2" maxlength="2" pattern="[a-dA-D]{1}|[0-9]+" disabled> select type of cab and panel or position here(ex. a-d if half or quarter 1-12 if network)<br>
+        <h4>Path</h4>
+        <select id="room" onchange="changeRoom();">
+            <option value="10">CR-10</option>
+            <option value="14" selected>CR-14</option>
+            <option value="28">CR-28</option>
+        </select>
+        <select id="path">
+        </select>
+        <p>Choose which room and then which path you are running the cable along. For diversity pick one then after getting length change path before getting next. All lengths stay until page is reloaded</p>
+        <h4>Slack</h4>
+        <input type="text" id="slack" name="slack" value=0>ft - add extra length here if you need to.<br><br>
+        <input type="button" name="calc" onclick="calcResults()" value="Get Length" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
+        <h3>--Results--</h3>
+        <p id="result"></p><br><br>
+		<input type="button" name="cxResult" onclick="createCSV(result_values,'crossconnect_results')" value="Download Results" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
+		<input type="button" name="cxLabel" onclick="createCSV(label_values,'crossconnect_lables')" value="Download Labels" style="font-size: 20px; border-radius: 6px; padding-left: 2em; padding-right: 2em;">
+        <h5>---- NOTES ----</h5>
+        <ul>
+            <li>this is a work in progress - <b>USE AT YOUR OWN RISK!!!</b></li>
+            <li>It is <b>highly recommended</b> to double check length, at least for now!</li>
+            <li>there are almost no checks on what is entered so feed it crazy stuff and it will give you crazy answers</li>
+            <li>there are no checks to ensure the path is in the same room as the cabs so ensure the correct room and path are selected or you may get some interesting results</li>
+            <li><b>Do not</b> use for network to network as the lengths assume the cable will be ran along fiber-tray/ladder-rack.</li> <!-- plan on updating for net to net runs and paths -->
+            <li><b>Do not</b> use for in the same cab as it will be too long.</li>
+            <li><b>Do not</b> use for precabled (under floor). These are for cables ran overhead using ether the fiber tray or the ladder-rack.</li>
+            <li>These expect the cab's patch panel to be in U46 (+/- 1U should have no effect) and so if needed to run down lower add the distance to the <i>Slack</i> field</li>
+            <li>Some slack is added by default to deal with cabs not being exactly lined up with tiles. this should leave a run with 1-3ft of extra cable depending on where both cabs are. This extra can be ate up easily thus assume for now that this is minimum length.</li>
+            <li>Starting rack and Ending rack are case insensitive</li>
+            <li>order of start cab and end cab does not matter (or at least should not)</li>
+            <li>if more then 1 backtrack path is required to reach cab add length from end cab to that backtrack point x2 to the slack field for each additional backtrack (at this point it might be easier to do by hand)</li>
+            <li>Feel free to slack me if you have any questions/suggestions. (@bstratton)</li>
+
+        </ul>
+    </body>
+    <script>
+        //add paths and rooms to this function if needed. Option('[NAME]', '[where is ladder rack/fiber tray followed by height adjustment 4 works for lowest ladder rack which equates to 2ft on each end 6 works for normal fiber tray and 8 for upper fiber tray.]')
+    function changeRoom(){
+        var select = document.getElementById("path");
+        select.options.length = 0;
+        if(document.getElementById("room").value == 14){
+            select.options[select.options.length] = new Option('Fiber South (GD)', 'GD8');
+            select.options[select.options.length] = new Option('Fiber North (FM)', 'FM8');
+            select.options[select.options.length] = new Option('Old Fiber South (FZ)', 'FZ6');
+            select.options[select.options.length] = new Option('Old Fiber North (FW)', 'FW6');
+            select.options[select.options.length] = new Option('Copper South (FZ)', 'FZ4');
+            select.options[select.options.length] = new Option('Copper North (FW)', 'FW4');
+        }
+        else if(document.getElementById("room").value == 10){
+            select.options[select.options.length] = new Option('Fiber East (114)', '146');
+            select.options[select.options.length] = new Option('Fiber West (118)', '186');
+            select.options[select.options.length] = new Option('Copper East (114)', '144');
+            select.options[select.options.length] = new Option('Copper West (118)', '184');
+        }
+        else if(document.getElementById("room").value == 28){
+            select.options[select.options.length] = new Option('Fiber South (IS)', 'IS6');
+            select.options[select.options.length] = new Option('Fiber North (IF)', 'IF6');
+			select.options[select.options.length] = new Option('Fiber HIQ (HY)', 'HY6');
+            select.options[select.options.length] = new Option('Copper South (IS)', 'IS4');
+            select.options[select.options.length] = new Option('Copper North (IF)', 'IF4');
+			select.options[select.options.length] = new Option('Copper HIQ (HY)', 'HY4');
+        }
+    }
+	function cabChange(loc, val){
+		if(val == "full_cab"){
+			document.getElementById(loc).disabled = true;
+		}
+		else{
+			document.getElementById(loc).disabled = false;
+		}
+	}
+    // in case the document is already rendered
+        if (document.readyState!='loading') changeRoom();
+        // modern browsers
+        else if (document.addEventListener){
+			document.addEventListener('DOMContentLoaded', changeRoom);
+			document.addEventListener('DOMContentLoaded', document.getElementById("uploadedCsv").value = null);
+		}
+		// IE <= 8
+        else document.attachEvent('onreadystatechange', function(){
+            if (document.readyState=='complete') changeRoom();
+        });
+    </script>
+<script> 
+		var csvData = null;
+		getCsv();
+		console.log(csvData);
+		/*------ Method for read uploded csv file ------*/
+		function getCsv(){
+       
+			var fileInput = document.getElementById("uploadedCsv"),
+
+			readFile = function () {
+				var reader = new FileReader();
+				reader.onload = function () {
+					csvData = getParseCsvData(reader.result);
+				};
+				// start reading the file. When it is done, calls the onload event defined above.
+				reader.readAsBinaryString(fileInput.files[0]);
+			};
+
+			fileInput.addEventListener('change', readFile);
+		}
+
+		/*------- Method for parse csv data and returning data--------------*/
+		function getParseCsvData(data) {
+
+			let parsedata = [];
+
+			let newLinebrk = data.split("\n");
+			for(let i = 0; i < newLinebrk.length; i++) {
+
+				parsedata.push(newLinebrk[i].split(","))
+			}
+
+			//console.table(parsedata);
+			console.log(parsedata);
+			return parsedata;
+		}
+	
+	function validateRackLocationInput(racLoc){
+		var patt = /(^[a-zA-Z]{2}[0-9]{2,3}[a-dA-D]?:[0-9]{1,2}:([0-9]{1,3}\|[0-9]{1,3}|[0-9]{1,3})$|^[a-zA-Z]{2}[0-9]{2,3}[a-dA-D]?$)/im;
+		return patt.test(racLoc);
+	}
+	</script>
+    <script>
+	var result_values = [["Start","End","Length (ft)","Length (m)","Room","Path"]];
+	var template_values = [["Start","End","Type","Path","Slack"]];
+	var label_values = [];
+	
+	function calcResults() {
+		if(csvData != null){
+			standardizeCSV(csvData);
+			console.log(csvData);
+			for (i = 1; i < csvData.length -1; i++){
+				if(validateRackLocationInput(csvData[i][0]) && validateRackLocationInput(csvData[i][1])){
+					console.log(csvData[i][0] + " to " + csvData[i][1] + " is valid");
+					if (getRoom(csvData[i][0]) == getRoom(csvData[i][1])){
+						var temp = [];
+						temp.push(getRoom(csvData[i][0]));
+						temp.push(getPath(temp[0],csvData[i][2].toLowerCase(),csvData[i][3].toLowerCase()));
+						temp.push(getCabType(csvData[i][0]));
+						temp.push(getCabType(csvData[i][1]));
+						console.log(temp);
+						//console.log(temp[1][1].slice(2,3));
+						if (!temp.includes("ERROR") && !temp[1].includes("ERROR") && !temp[2].includes("ERROR") && !temp[3].includes("ERROR"))
+							getLength(csvData[i][0], csvData[i][1], temp[0], temp[1][1], temp[1][0], csvData[i][4], temp[2][0], temp[3][0], temp[2][1], temp[3][1]);
+						else
+							errorInCSV(csvData[i][0], csvData[i][1]);
+					}
+					else
+						errorInCSV(csvData[i][0], csvData[i][1]);
+				}
+				else{
+					//result_values.push([csvData[i][0], csvData[i][0], "invalid", "invalid", "CR-" + csvData[i][2], csvData[i][3]]);
+					console.log(csvData[i][0] + " to " + csvData[i][1] + " is NOT valid");
+					errorInCSV(csvData[i][0], csvData[i][1]);
+				}
+			}
+			csvData = null;
+			document.getElementById("uploadedCsv").value = null;
+			
+		}
+		else{
+			if(isNaN(parseFloat(document.getElementById("slack").value))){
+				document.getElementById("slack").value = 0;
+			}
+			var start = document.getElementById("start").value.toUpperCase();
+			var end = document.getElementById("end").value.toUpperCase();
+			//if(start.slice(4,5) == ":") start = [start.slice(0,2),0,start.slice(2,)].join('');
+			//if(end.slice(4,5) == ":") end = [end.slice(0,2),0,end.slice(2,)].join('');
+			getLength(start, end,document.getElementById("room").value,document.getElementById("path").value.toUpperCase(), document.getElementById("path").options[document.getElementById("path").selectedIndex].text, parseInt(document.getElementById("slack").value,10),document.getElementById("s_rack").value,document.getElementById("e_rack").value, document.getElementById("s_value").value.toUpperCase(), document.getElementById("e_value").value.toUpperCase());
+		}
+	}
+    function getLength(start, end, room, path, pathText, slack, sType, eType, sValue, eValue) {
+        var tileSize = 2; //size of the tiles used to get lengths in between cabs
+        var offset = 4; //Added extra length because cabs don't perfectly line up with tiles
+        var len = parseInt(path.slice(2,3),10) + offset + slack; //variable keeping track of distance. gets its initial values from element with id="path".
+        var section = 0;//used as simple way to make it loop through twice to cover both sides of runs in between fiber trays
+		if(start.slice(2,3) == "0") start = [start.slice(0,2),start.slice(3,)].join('');
+		if(end.slice(2,3) == "0") end = [end.slice(0,2),end.slice(3,)].join('');
+		if(start.slice(4,5) == ":"){
+			var startPort =  start.slice(4,);
+			start = start.slice(0,4);
+		}
+		else{
+			var startPort =  start.slice(5,);
+			start = start.slice(0,5); // saves starting cab to a var
+		}
+		if(end.slice(4,5) == ":"){
+			var endPort =  end.slice(4,);
+			end = end.slice(0,4)
+		}
+		else{
+			var endPort =  end.slice(5,);
+			end = end.slice(0,5); // saves ending cab to a var
+		}
+		var sameRow = false;
+        var tempChar = start.slice(0,2); // takes first part of cab to iterate through
+		console.log(path);
+		console.log(len);
+        if (room == 10){ // because CR-10 rows run perpendicular to other rooms had to make special rules for it. should be valid for any rooms with east/west lined up rows.
+            if (start.slice(0,2) == end.slice(0,2)){
+                len += (Math.abs(start.slice(2,5) - end.slice(2,5)) * tileSize)
+                sameRow = true;
+            }
+            else{
+                len += ((Math.abs(start.slice(3,5) - path.slice(0,2)) + Math.abs(path.slice(0,2) - end.slice(3,5))) * tileSize); // gets from starting cab to ladder rack as absolute value then from ladder rack to end cab as absolute value. then takes those and multiplies by size of the tiles to get that portion of the run.
+            }
+            path = end.slice(0,2); // this is so it gets from starting row to end row as the back and forth are taken care of above.
+            len += azRun(tempChar,path,tileSize);
+        }
+        else{
+            var tempLen = (Math.abs(start.slice(2,5) - end.slice(2,5)) * tileSize); // this is the across cabs length for all rooms where rows run north and south.
+            if (tempLen == 0){
+                len += azRun(tempChar,end.slice(0,2),tileSize); // row run if in same row
+                sameRow = true;
+            }
+            else{
+                len += tempLen;
+                len += azRun(tempChar,path.slice(0,2),tileSize); // first half of row run
+                len += azRun(path.slice(0,2),end,tileSize); // second half of row run
+            }
+        }
+
+		
+		// this code if for adding lengths for half cabs quarter cabs and network panels
+		var s_cab = sType;
+		var e_cab = eType;
+		var s_value = sValue;
+		var e_value = eValue;
+		var tempTextA = "";
+		var tempTextB = "";
+		if (s_cab == "network_rack"){
+			len += Math.ceil(sValue * 0.7);
+			tempTextA = ":" + sValue;
+		}
+		if ((s_cab == "half_cab" || s_cab == "quarter_cab") && s_value == "A"){
+			tempTextA = "A";
+		}
+		if (s_cab == "half_cab" && s_value == "B"){
+			len += Math.ceil(2 * 1.8);
+			tempTextA = "B";
+		}
+		if (s_cab == "quarter_cab" && s_value == "B"){
+			len += Math.ceil(1 * 1.8);
+			tempTextA = "B";
+		}
+		if (s_cab == "quarter_cab" && s_value == "C"){
+			len += Math.ceil(2 * 1.8);
+			tempTextA = "C";
+		}
+		if (s_cab == "quarter_cab" && s_value == "D"){
+			len += Math.ceil(3 * 1.8);
+			tempTextA = "D";
+		}
+		if ((e_cab == "half_cab" || e_cab == "quarter_cab") && e_value == "A"){
+			tempTextB = "A";
+		}
+		if (e_cab == "network_rack"){
+			len += Math.ceil(eValue * 0.7);
+			tempTextB = ":" + eValue;
+		}
+		if (e_cab == "half_cab" && e_value == "B"){
+			len += Math.ceil(2 * 1.8);
+			tempTextB = "B";
+		}
+		if (e_cab == "quarter_cab" && e_value == "B"){
+			len += Math.ceil(1 * 1.8);
+			tempTextB = "B";
+		}
+		if (e_cab == "quarter_cab" && e_value == "C"){
+			len += Math.ceil(2 * 1.8);
+			tempTextB = "C";
+		}
+		if (e_cab == "quarter_cab" && e_value == "D"){
+			len += Math.ceil(3 * 1.8);
+			tempTextB = "D";
+		}
+		
+		// this code is to display the results
+		console.log(len);
+        var temp = document.getElementById("result").innerHTML; // grabs already added data to prevent overwrite.
+        // this sets the results paragraph to whatever the calculations determine the length to be
+        temp += " The cable length needed to go from " + start + startPort + " to " + end + endPort;
+		if (sameRow){
+            document.getElementById("result").innerHTML = temp + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
+        }
+        else{
+            document.getElementById("result").innerHTML = temp + " using path: " + pathText + " is: " + len + "ft or " + roundFloat(convertFeetToMeters(len),0.25,2) + "m<br>";
+        }
+		result_values.push([start + startPort, end + endPort, len + "ft", roundFloat(convertFeetToMeters(len),0.25,2) + "m", "CR-" + room, pathText]);
+		label_values.push([start + startPort +"\\n"+ end + endPort]);
+		//console.log(label_values.toString());
+    }
+	function createCSV(fileArray,fileName){
+		let csvContent = "data:text/csv;charset=utf-8," + fileArray.map(e => e.join(",")).join("\n");
+		var encodedUri = encodeURI(csvContent);
+		var link = document.createElement("a");
+		link.setAttribute("href", encodedUri);
+		link.setAttribute("download", fileName+".csv");
+		document.body.appendChild(link); // Required for FF
+		link.click(); // This will download the csv file.
+	}
+	function checkRadio(element){
+		var radios = document.getElementsByName(element);
+
+		for (var i = 0, length = radios.length; i < length; i++)
+		{
+			if (radios[i].checked)
+			{
+				console.log(radios[i].value);
+				return(radios[i].value);
+			}
+		}
+	}
+    function azRun(start,end,tileSize) {
+        var tempLen = 0;
+        while(start.charCodeAt(0) != end.charCodeAt(0) || start.charCodeAt(1) != end.charCodeAt(1)){ // this while counts from start point to end point. usually this runs to/from path
+                if (start.charCodeAt(0) < end.charCodeAt(0) || (start.charCodeAt(0) == end.charCodeAt(0) && start.charCodeAt(1) < end.charCodeAt(1))){ // this moves up through letters
+                    start = nextChar(start);
+                    tempLen += tileSize;
+                }
+                else if (start.charCodeAt(0) > end.charCodeAt(0) || start.charCodeAt(1) > end.charCodeAt(1)){ // this moves down through letters
+                    start = prevChar(start);
+                    tempLen += tileSize;
+                }
+            }
+        return tempLen;
+    }
+    function nextChar(c) {
+        var u = c.toUpperCase();
+        if (same(u,'Z')){
+            var txt = '';
+            var i = u.length;
+            while (i--) {
+                txt += 'A';
+            }
+            return (txt+'A');
+        } else {
+            var p = "";
+            var q = "";
+            if(u.length > 1){
+                p = u.substring(0, u.length - 1);
+                q = String.fromCharCode(p.slice(-1).charCodeAt(0));
+            }
+            var l = u.slice(-1).charCodeAt(0);
+            var z = nextLetter(l);
+            if(z==='A'){
+                return p.slice(0,-1) + nextLetter(q.slice(-1).charCodeAt(0)) + z;
+            } else {
+                return p + z;
+            }
+        }
+    }
+    function nextLetter(l){
+        if(l<90){
+            return String.fromCharCode(l + 1);
+        }
+        else{
+            return 'A';
+        }
+    }
+    function prevChar(c) {
+        var u = c.toUpperCase();
+        if (same(u,'A')){
+            var txt = '';
+            var i = u.length;
+            while (i--) {
+                txt += 'Z';
+            }
+            return (txt+'Z');
+        } else {
+            var p = "";
+            var q = "";
+            if(u.length > 1){
+                p = u.substring(0, u.length - 1);
+                q = String.fromCharCode(p.slice(-1).charCodeAt(0));
+            }
+            var l = u.slice(-1).charCodeAt(0);
+            var z = prevLetter(l);
+            if(z==='Z'){
+                return p.slice(0,-1) + prevLetter(q.slice(-1).charCodeAt(0)) + z;
+            } else {
+                return p + z;
+            }
+        }
+    }
+    function prevLetter(l){
+        if(l>65){
+            return String.fromCharCode(l - 1);
+        }
+        else{
+            return 'Z';
+        }
+    }
+    function same(str,char){
+        var i = str.length;
+        while (i--) {
+            if (str[i]!==char){
+                return false;
+            }
+        }
+        return true;
+    }
+    function convertFeetToMeters(feet) {
+        if (feet < (0)) {
+            return 'input cannot be less than zero';
+        } else {
+            return (feet*0.3048); // interestingly enough this is accurate at nearly 2.5 times of the circumference of the earth to less than 2m difference
+        }
+    }
+	function roundFloat(value, toNearest, fixed) {
+		return (Math.ceil(value / toNearest) * toNearest).toFixed(fixed);
+	}
+    </script>
+	
+	<script>
+	function standardizeCSV(data){
+		var typePattern = /^copper$|^fiber$/;
+		var pathPattern = /^[n,s,e,w]$/;
+		for (i = 1; i < data.length -1; i++){
+			data[i][0] = data[i][0].toUpperCase();
+			data[i][1] = data[i][1].toUpperCase();
+			data[i][2] = data[i][2].toLowerCase();
+			data[i][3] = data[i][3].toLowerCase();
+			if(isNaN(parseFloat(data[i][4]))) data[i][4] = 0;
+			data[i][4] = parseInt(data[i][4]); 
+			if(data[i][0].slice(4,5) == ":") data[i][0] = [data[i][0].slice(0,2),0,data[i][0].slice(2,)].join('');
+			if(data[i][1].slice(4,5) == ":") data[i][1] = [data[i][1].slice(0,2),0,data[i][1].slice(2,)].join('');
+			if(!typePattern.test(data[i][2])) data[i][2] = "ERROR";
+			if(!pathPattern.test(data[i][3])) data[i][2] = "ERROR";
+		}
+	}
+	function cabRangeCheck(aRange,zRange,value){
+		if (value.slice(0,2) >= aRange.slice(0,2) && value.slice(2,5) >= aRange.slice(2,5) && value.slice(0,2) <= zRange.slice(0,2) && value.slice(2,5) <= zRange.slice(2,5)) return true;
+		return false;
+	}
+	function getRoom(loc){
+		if (cabRangeCheck("CT105", "EW129", loc)){
+			return 10;
+		}
+		if (cabRangeCheck("FJ132", "GN185", loc)){
+			return 14;
+		}
+		if (cabRangeCheck("HM085", "IV152", loc)){
+			return 28;
+		}
+		return 0;
+	}
+	function getPath(room, type, path){
+		if (room == 10){
+			if (type == "copper"){
+				if (path == "e"){
+					return['Copper East (114)', '144'];
+				}
+				if (path == "w"){
+					return['Copper West (118)', '184'];
+				}
+				else{
+					return['ERROR'];
+				}
+			}
+			if (type == "fiber"){
+				if (path == "e"){
+					return['Fiber East (114)', '146'];
+				}
+				if (path == "w"){
+					return['Fiber West (118)', '186'];
+				}
+				else{
+					return['ERROR'];
+				}
+			}
+			else{
+				return['ERROR'];
+			}
+		}
+		if (room == 14){
+			if (type == "copper"){
+				if (path == "n"){
+					return['Copper North (FW)', 'FW4'];
+				}
+				if (path == "s"){
+					return['Copper South (FZ)', 'FZ4'];
+				}
+				else{
+					return['ERROR'];
+				}
+			}
+			if (type == "fiber"){
+				if (path == "n"){
+					return['Fiber North (FM)', 'FM8'];
+				}
+				if (path == "s"){
+					return['Fiber South (GD)', 'GD8'];
+				}
+				else{
+					return['ERROR'];
+				}
+			}
+			else{
+				return['ERROR'];
+			}
+		}
+		if (room == 28){
+			if (type == "copper"){
+				if (path == "n"){
+					return['Copper North (IF)', 'IF4'];
+				}
+				if (path == "s"){
+					return['Copper South (IS)', 'IS4'];
+				}
+				if (path == "h"){
+					return['Copper HIQ (HY)', 'HY4'];
+				}
+				else{
+					return['ERROR'];
+				}
+			}
+			if (type == "fiber"){
+				if (path == "n"){
+					return['Fiber North (IF)', 'IF6'];
+				}
+				if (path == "s"){
+					return['Fiber South (IS)', 'IS6'];
+				}
+				if (path == "h"){
+					return['Fiber HIQ (HY)', 'HY6'];
+				}
+				else{
+					return['ERROR'];
+				}
+			}
+			else{
+				return['ERROR'];
+			}
+		}
+		else{
+			return['ERROR'];
+		}
+	}
+	function getCabType(loc){
+		if (cabRangeCheck("EU108", "EU122", loc) || cabRangeCheck("FM155", "GD155", loc) || cabRangeCheck("IG085", "IR089", loc)){
+			return ["network_rack" ,loc.substring(6, loc.lastIndexOf(":"))];
+		}
+		if (cabRangeCheck("FR132A", "FS132B", loc)||cabRangeCheck("FV132A", "GD132B", loc)){
+			return ["half_cab", loc.slice(5,6)];
+		}
+		if (cabRangeCheck("FZ185A", "GE185D", loc)){
+			return ["quarter_cab", loc.slice(5,6)];
+		}
+		return ["full_cab", ""];
+	}
+	function errorInCSV(start, end){
+		document.getElementById("result").innerHTML += "There is an ERROR in going from " + start + " to " + end + ". Please check CSV formatting.<br>"
+	}
+	
+	</script>
+</html>

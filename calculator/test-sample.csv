@@ -1,0 +1,6 @@
+Start,End,CableType,Slack
+FT132,GG185,fiber,0
+FR132,FS132,copper,5
+AB123,CD456,fiber,0
+FJ132,GN185,copper,0
+HM085,IV152,fiber,0
