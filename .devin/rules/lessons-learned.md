@@ -237,3 +237,15 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 54. Mutable State in Algorithm Implementations Must Be Documented or Eliminated
 - **Rule**: When implementing algorithms that mutate state (e.g., graph algorithms with edge removal), either make the state immutable or clearly document reuse constraints.
 - **Guardrail**: If an algorithm function mutates its input data structure, either: (1) implement immutable operations (create new instances instead of mutating), (2) add a deep copy method and use it to isolate mutations, or (3) add clear JSDoc warnings that instances must not be reused after calling the function. Mutable state in reusable algorithms creates subtle bugs when instances are reused or when concurrent access occurs. The current usage pattern (creating new instances each time) may change in the future, leading to bugs.
+
+### 55. Avoid Homonymous Functions Across Modules
+- **Rule**: Do not export functions with the same name from different modules unless they implement the exact same contract.
+- **Guardrail**: When a new function is needed that conceptually overlaps with an existing exported function in another module, choose a distinct name that reflects its specific purpose (e.g., `calculateShortestPath` vs `findShortestPath`). Homonymous functions with different signatures force developers to rely on import paths to disambiguate, which is error-prone during refactoring and increases onboarding friction. Before creating a new function, grep the codebase for existing exports with the same name.
+
+### 56. Do Not Persist Placeholder Data
+- **Rule**: When storing data for later retrieval or validation, never persist hardcoded placeholder or default values that misrepresent the actual state.
+- **Guardrail**: If a schema includes fields for debug information, telemetry, or audit data, either populate them from real values at the time of computation, or omit the fields from the persisted schema entirely. Persisting zeros, empty strings, or fabricated timestamps creates a false sense of data integrity and renders downstream validation meaningless. If the data is not yet available, defer persistence until it is, or use a schema that does not require the unavailable fields.
+
+### 57. User-Facing Imports Must Surface Errors Explicitly
+- **Rule**: When parsing user-uploaded files (CSV, JSON, etc.), every row or record that cannot be processed must be reported to the user with a clear reason, not silently discarded.
+- **Guardrail**: Silent skipping of invalid rows during bulk import is a form of data loss that frustrates users and erodes trust. Design import pipelines to return structured error information (e.g., row number, field, failure reason) alongside successfully processed items. The UI should display a summary like "450 imported, 3 errors" with a downloadable error report. Never use `continue` or silent filtering as the primary error-handling strategy for user-provided data.

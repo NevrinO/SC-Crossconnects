@@ -40,6 +40,7 @@ export interface CalculationResult {
   room: string;
   path: string;
   sameX: boolean;
+  cableType: 'fiber' | 'copper';
 }
 
 export interface CabinetInfo {

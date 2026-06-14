@@ -226,6 +226,7 @@ export function calculateManual(
     room: room.name,
     path: segment.name,
     sameX,
+    cableType,
   };
 }
 
@@ -234,4 +235,33 @@ export function getAvailablePaths(room: Room, cableType: 'fiber' | 'copper'): Pa
     if (cableType === 'fiber') return seg.fiberHeight !== null;
     return seg.copperHeight !== null;
   });
+}
+
+/**
+ * Finds the shortest path across all available segments for a given cable type.
+ * Iterates through all available paths and returns the calculation result with the minimum length.
+ * Returns null if no valid path is found.
+ */
+export function calculateShortestPath(
+  start: string,
+  end: string,
+  room: Room,
+  cableType: 'fiber' | 'copper',
+  slack: number
+): CalculationResult | null {
+  const availablePaths = getAvailablePaths(room, cableType);
+  if (availablePaths.length === 0) return null;
+
+  let shortestResult: CalculationResult | null = null;
+  let shortestLength = Infinity;
+
+  for (const path of availablePaths) {
+    const result = calculateManual(start, end, [path], cableType, slack, room);
+    if (result && result.lengthFt < shortestLength) {
+      shortestResult = result;
+      shortestLength = result.lengthFt;
+    }
+  }
+
+  return shortestResult;
 }

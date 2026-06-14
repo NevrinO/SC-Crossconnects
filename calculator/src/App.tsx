@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import roomsData from './data/rooms.json';
 import type { Room, CalculationResult } from './types/room';
 import { calculateManual, validateRackLocationInput } from './lib/calculation';
 import { validateRooms } from './lib/validation';
 import { usePathCalculation } from './hooks/usePathCalculation';
+import { initializeSessionCleanup } from './lib/storage';
 import RoomSelector from './components/RoomSelector';
 import CabinetInput from './components/CabinetInput';
 import CableTypeSelector from './components/CableTypeSelector';
@@ -11,6 +13,8 @@ import PathSelector from './components/PathSelector';
 import SlackInput from './components/SlackInput';
 import CalculateButton from './components/CalculateButton';
 import ResultsTable from './components/ResultsTable';
+import CsvImport from './components/CsvImport';
+import SessionsPanel from './components/SessionsPanel';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -21,6 +25,13 @@ export default function App() {
     try { return validateRooms(roomsData); }
     catch { return []; }
   });
+  
+  // Initialize session cleanup on mount
+  useEffect(() => {
+    initializeSessionCleanup();
+  }, []);
+
+  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions'>('manual');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [startCabinet, setStartCabinet] = useState('');
   const [endCabinet, setEndCabinet] = useState('');
@@ -74,8 +85,24 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
+    <div className="mx-auto max-w-4xl p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
+        <div className="flex space-x-4">
+          <Link
+            to="/validate"
+            className="text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            Validation Tool
+          </Link>
+          <a
+            href="/legacy/index.html"
+            className="text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            Legacy Version
+          </a>
+        </div>
+      </div>
 
       {loadError && (
         <div className="mb-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -83,69 +110,133 @@ export default function App() {
         </div>
       )}
 
-      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <RoomSelector
-          rooms={rooms}
-          selectedRoomId={selectedRoomId}
-          onSelect={(id) => {
-            setSelectedRoomId(id);
-            setError(null);
-          }}
-        />
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <CabinetInput
-            label="Starting Rack"
-            value={startCabinet}
-            onChange={setStartCabinet}
-            room={selectedRoom}
-          />
-          <CabinetInput
-            label="Ending Rack"
-            value={endCabinet}
-            onChange={setEndCabinet}
-            room={selectedRoom}
-          />
-        </div>
-
-        <CableTypeSelector
-          value={cableType}
-          onChange={(type) => {
-            setCableType(type);
-            setError(null);
-          }}
-        />
-
-        <PathSelector
-          paths={paths}
-          selectedPath={selectedPath}
-          onSelect={selectPath}
-          isCalculating={isCalculating}
-          error={pathError}
-        />
-
-        <SlackInput value={slack} onChange={setSlack} />
-
-        {error && (
-          <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
-        )}
-
-        <CalculateButton
-          disabled={!canCalculate}
-          onClick={handleCalculate}
-        />
+      {/* Tab Navigation */}
+      <div className="mb-6 flex space-x-1 rounded-lg border border-gray-200 bg-gray-100 p-1">
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'manual'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Manual Calculation
+        </button>
+        <button
+          onClick={() => setActiveTab('csv')}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'csv'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          CSV Import
+        </button>
+        <button
+          onClick={() => setActiveTab('sessions')}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'sessions'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Saved Sessions
+        </button>
       </div>
 
-      <ResultsTable results={results} />
+      {activeTab === 'manual' && (
+        <>
+          <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <RoomSelector
+              rooms={rooms}
+              selectedRoomId={selectedRoomId}
+              onSelect={(id) => {
+                setSelectedRoomId(id);
+                setError(null);
+              }}
+            />
 
-      {results.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setResults([])}
-          className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
-        >
-          Clear results
-        </button>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <CabinetInput
+                label="Starting Rack"
+                value={startCabinet}
+                onChange={setStartCabinet}
+                room={selectedRoom}
+              />
+              <CabinetInput
+                label="Ending Rack"
+                value={endCabinet}
+                onChange={setEndCabinet}
+                room={selectedRoom}
+              />
+            </div>
+
+            <CableTypeSelector
+              value={cableType}
+              onChange={(type) => {
+                setCableType(type);
+                setError(null);
+              }}
+            />
+
+            <PathSelector
+              paths={paths}
+              selectedPath={selectedPath}
+              onSelect={selectPath}
+              isCalculating={isCalculating}
+              error={pathError}
+            />
+
+            <SlackInput value={slack} onChange={setSlack} />
+
+            {error && (
+              <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            )}
+
+            <CalculateButton
+              disabled={!canCalculate}
+              onClick={handleCalculate}
+            />
+          </div>
+
+          <ResultsTable results={results} />
+
+          {results.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setResults([])}
+              className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              Clear results
+            </button>
+          )}
+        </>
+      )}
+
+      {activeTab === 'csv' && (
+        <CsvImport rooms={rooms} onResultsLoaded={(csvResults) => {
+          // Convert CSV results to CalculationResult format
+          const converted: CalculationResult[] = csvResults
+            .filter(r => r.status === 'OK')
+            .map(r => ({
+              startCab: r.start,
+              endCab: r.end,
+              lengthFt: r.feet || 0,
+              lengthM: r.meters || 0,
+              room: r.room || '',
+              path: r.path || '',
+              sameX: false,
+              cableType: r.cableType
+            }));
+          setResults(converted);
+        }} />
+      )}
+
+      {activeTab === 'sessions' && (
+        <SessionsPanel
+          currentResults={results}
+          onLoadSession={(sessionResults) => setResults(sessionResults)}
+        />
       )}
     </div>
   );

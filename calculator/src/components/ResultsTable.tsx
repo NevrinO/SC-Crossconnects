@@ -17,7 +17,7 @@ export default function ResultsTable({ results }: ResultsTableProps) {
           <div key={`${result.startCab}-${result.endCab}-${result.room}-${result.path}-${index}`} className="px-4 py-3">
             <div className="text-sm text-gray-900">
               {result.startCab} → {result.endCab}
-              {!result.sameRow && <span className="text-gray-500"> via {result.path}</span>}
+              {!result.sameX && <span className="text-gray-500"> via {result.path}</span>}
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-lg font-bold text-blue-700">{result.lengthFt} ft</span>
