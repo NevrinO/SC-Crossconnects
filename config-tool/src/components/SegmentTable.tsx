@@ -250,7 +250,7 @@ export function SegmentTable({
                         onClick={(e) => e.stopPropagation()}
                       >
                         <option value="fiber-path">Fiber Path</option>
-                        <option value="ladder-rack">Ladder Rack</option>
+                        <option value="copper-path">Copper Path</option>
                         <option value="mixed-path">Mixed Path</option>
                       </select>
                     </td>
@@ -325,7 +325,7 @@ export function SegmentTable({
                         className={`px-2 py-1 rounded text-xs ${
                           segment.type === 'fiber-path'
                             ? 'bg-blue-100 text-blue-800'
-                            : segment.type === 'ladder-rack'
+                            : segment.type === 'copper-path'
                             ? 'bg-orange-100 text-orange-800'
                             : 'bg-purple-100 text-purple-800'
                         }`}

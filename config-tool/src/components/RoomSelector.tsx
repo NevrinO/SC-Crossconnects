@@ -1,39 +1,22 @@
 import { Room } from '../types/editor'
-import { useRoomImport } from '../hooks/useRoomImport'
 
 interface RoomSelectorProps {
   rooms: Room[]
   selectedRoom: Room | null
   onRoomSelect: (room: Room | null) => void
-  onImportFullRooms: (rooms: Room[]) => void
-  onImportSingleRoom: (room: Room) => void
+  onNewRoomClick: () => void
+  onRoomClone: (room: Room) => void
+  onRoomEdit?: (room: Room) => void
 }
 
 export function RoomSelector({
   rooms,
   selectedRoom,
   onRoomSelect,
-  onImportFullRooms,
-  onImportSingleRoom,
+  onNewRoomClick,
+  onRoomClone,
+  onRoomEdit,
 }: RoomSelectorProps) {
-  const { error, handleImportFullRooms, handleImportSingleRoom } = useRoomImport(
-    onImportFullRooms,
-    onImportSingleRoom
-  )
-
-  const onImportFull = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    await handleImportFullRooms(file)
-    event.target.value = ''
-  }
-
-  const onImportSingle = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    await handleImportSingleRoom(file)
-    event.target.value = ''
-  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -62,35 +45,29 @@ export function RoomSelector({
         </div>
 
         <div className="flex gap-2">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Import Full rooms.json
-            </label>
-            <input
-              type="file"
-              accept=".json"
-              onChange={onImportFull}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Import Single Room
-            </label>
-            <input
-              type="file"
-              accept=".json"
-              onChange={onImportSingle}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-          </div>
+          <button
+            onClick={onNewRoomClick}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            Create New Room
+          </button>
+          {selectedRoom && (
+            <>
+              <button
+                onClick={() => onRoomEdit && onRoomEdit(selectedRoom)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Edit Room
+              </button>
+              <button
+                onClick={() => onRoomClone(selectedRoom)}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              >
+                Clone Room
+              </button>
+            </>
+          )}
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md">
-            {error}
-          </div>
-        )}
 
         {selectedRoom && (
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">

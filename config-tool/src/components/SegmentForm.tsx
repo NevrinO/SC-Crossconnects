@@ -12,9 +12,8 @@ interface SegmentFormProps {
 export function SegmentForm({ isOpen, start, end, onClose, onCreate }: SegmentFormProps) {
   const [id, setId] = useState('')
   const [name, setName] = useState('')
-  const [type, setType] = useState<'fiber-path' | 'ladder-rack' | 'mixed-path'>('fiber-path')
-  const [fiberHeight, setFiberHeight] = useState<string>('')
-  const [copperHeight, setCopperHeight] = useState<string>('')
+  const [type, setType] = useState<'fiber-path' | 'copper-path' | 'mixed-path'>('fiber-path')
+  const [height, setHeight] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
   const generateId = () => {
@@ -25,35 +24,20 @@ export function SegmentForm({ isOpen, start, end, onClose, onCreate }: SegmentFo
     e.preventDefault()
     setError(null)
 
-    // Validate at least one height is provided based on type
-    const fiberNum = fiberHeight !== '' ? parseFloat(fiberHeight) : null
-    const copperNum = copperHeight !== '' ? parseFloat(copperHeight) : null
-
-    if (type === 'fiber-path' && fiberNum === null) {
-      setError('Fiber height is required for fiber-path segments')
+    // Validate height is provided
+    if (height === '') {
+      setError('Height is required')
+      return
+    }
+    const heightNum = parseFloat(height)
+    if (isNaN(heightNum) || heightNum <= 0) {
+      setError('Height must be a positive number')
       return
     }
 
-    if (type === 'ladder-rack' && copperNum === null) {
-      setError('Copper height is required for ladder-rack segments')
-      return
-    }
-
-    if (type === 'mixed-path' && (fiberNum === null || copperNum === null)) {
-      setError('Both fiber and copper heights are required for mixed-path segments')
-      return
-    }
-
-    // Validate heights are positive numbers
-    if (fiberNum !== null && (isNaN(fiberNum) || fiberNum <= 0)) {
-      setError('Fiber height must be a positive number')
-      return
-    }
-
-    if (copperNum !== null && (isNaN(copperNum) || copperNum <= 0)) {
-      setError('Copper height must be a positive number')
-      return
-    }
+    // Map height to the correct field based on type
+    const fiberNum = (type === 'fiber-path' || type === 'mixed-path') ? heightNum : null
+    const copperNum = (type === 'copper-path' || type === 'mixed-path') ? heightNum : null
 
     // Validate ID uniqueness if provided manually
     const segmentId = id.trim() || generateId()
@@ -76,8 +60,7 @@ export function SegmentForm({ isOpen, start, end, onClose, onCreate }: SegmentFo
     setId('')
     setName('')
     setType('fiber-path')
-    setFiberHeight('')
-    setCopperHeight('')
+    setHeight('')
     setError(null)
     onClose()
   }
@@ -133,47 +116,30 @@ export function SegmentForm({ isOpen, start, end, onClose, onCreate }: SegmentFo
             </label>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as any)}
+              onChange={(e) => setType(e.target.value as 'fiber-path' | 'copper-path' | 'mixed-path')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="fiber-path">Fiber Path</option>
-              <option value="ladder-rack">Ladder Rack</option>
+              <option value="copper-path">Copper Path</option>
               <option value="mixed-path">Mixed Path</option>
             </select>
           </div>
 
-          {/* Fiber Height */}
+          {/* Height */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fiber Height {type === 'fiber-path' || type === 'mixed-path' ? <span className="text-red-500">*</span> : '(optional)'}
+              Height (ft) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
               step="0.1"
               min="0.1"
-              value={fiberHeight}
-              onChange={(e) => setFiberHeight(e.target.value)}
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
               placeholder="e.g., 6.0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required={type === 'fiber-path' || type === 'mixed-path'}
-            />
-          </div>
-
-          {/* Copper Height */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Copper Height {type === 'ladder-rack' || type === 'mixed-path' ? <span className="text-red-500">*</span> : '(optional)'}
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              min="0.1"
-              value={copperHeight}
-              onChange={(e) => setCopperHeight(e.target.value)}
-              placeholder="e.g., 6.0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required={type === 'ladder-rack' || type === 'mixed-path'}
+              required
             />
           </div>
 

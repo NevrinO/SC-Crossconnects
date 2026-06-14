@@ -1,5 +1,6 @@
 import { Room, PathSegment, CoordinateFormat } from '../types/editor'
 import { calculateGridBounds, compareXLabels } from './grid-utils'
+import { validateCabinetBounds } from './cabinet-utils'
 
 export interface ValidationError {
   field: string
@@ -29,6 +30,10 @@ export function validateRoomStructure(room: any): { isValid: boolean; errors: st
   if (typeof room.offset !== 'number') errors.push('Missing or invalid offset')
   if (typeof room.spilloverAdditionalLength !== 'number') errors.push('Missing or invalid spilloverAdditionalLength')
   if (room.coordinateFormat !== 'letters-first' && room.coordinateFormat !== 'numbers-first') errors.push('Invalid coordinateFormat (must be "letters-first" or "numbers-first")')
+  // Orientation is optional for backward compatibility with calculator rooms
+  if (room.orientation && room.orientation !== 'numbers-vertical' && room.orientation !== 'numbers-horizontal') {
+    errors.push('Invalid orientation (must be "numbers-vertical" or "numbers-horizontal")')
+  }
   if (!Array.isArray(room.pathSegments)) {
     errors.push('pathSegments must be an array')
   } else {
@@ -86,6 +91,18 @@ export function validateCoordinateFormat(
 }
 
 /**
+ * Validate that a string is a valid letter label (uppercase letters only, 1-3 characters)
+ * Used for xRange fields which define column ranges (e.g., "FF", "GQ", "ZZ")
+ */
+export function validateLetterLabel(label: string): { isValid: boolean; error?: string } {
+  const match = label.match(/^[A-Z]{1,3}$/)
+  if (!match) {
+    return { isValid: false, error: `Invalid letter label "${label}". Expected uppercase letters only (e.g., "A", "FF", "ZZ")` }
+  }
+  return { isValid: true }
+}
+
+/**
  * Validate that a segment's start and end coordinates are within room bounds
  */
 export function validateSegmentBounds(
@@ -131,7 +148,23 @@ export function validateSegmentBounds(
 }
 
 /**
- * Check if two segments overlap
+ * Returns true if two segments share at least one height value that conflicts.
+ * Fiber tray and ladder rack can coexist on the same path at different heights.
+ * A conflict only occurs when both segments occupy the same path at the same height.
+ */
+function heightsConflict(s1: PathSegment, s2: PathSegment): boolean {
+  const heights1 = new Set<number>()
+  if (s1.fiberHeight != null) heights1.add(s1.fiberHeight)
+  if (s1.copperHeight != null) heights1.add(s1.copperHeight)
+
+  if (s2.fiberHeight != null && heights1.has(s2.fiberHeight)) return true
+  if (s2.copperHeight != null && heights1.has(s2.copperHeight)) return true
+  return false
+}
+
+/**
+ * Check if two segments overlap in path geometry AND height.
+ * Segments on the same path at different heights are allowed.
  */
 export function checkSegmentOverlap(
   segment1: PathSegment,
@@ -149,31 +182,27 @@ export function checkSegmentOverlap(
     const [minX1, maxX1] = [segment1.start.x, segment1.end.x].sort(compareXLabels)
     const [minX2, maxX2] = [segment2.start.x, segment2.end.x].sort(compareXLabels)
 
-    // Full overlap: same start, end, and Y
-    if (minX1 === minX2 && maxX1 === maxX2 && segment1.start.y === segment2.start.y) {
-      return 'full'
-    }
+    if (segment1.start.y !== segment2.start.y) return 'none'
 
-    // Partial overlap: ranges intersect
-    if (compareXLabels(maxX1, minX2) >= 0 && compareXLabels(minX1, maxX2) <= 0 && segment1.start.y === segment2.start.y) {
-      return 'partial'
-    }
+    const pathFull = minX1 === minX2 && maxX1 === maxX2
+    const pathPartial = compareXLabels(maxX1, minX2) >= 0 && compareXLabels(minX1, maxX2) <= 0
+
+    if (!pathPartial) return 'none'
+    if (!heightsConflict(segment1, segment2)) return 'none'
+    return pathFull ? 'full' : 'partial'
   } else {
-    const [minY1, maxY1] = [segment1.start.y, segment1.end.y].sort()
-    const [minY2, maxY2] = [segment2.start.y, segment2.end.y].sort()
+    const [minY1, maxY1] = [segment1.start.y, segment1.end.y].sort((a, b) => a - b)
+    const [minY2, maxY2] = [segment2.start.y, segment2.end.y].sort((a, b) => a - b)
 
-    // Full overlap: same start, end, and X
-    if (minY1 === minY2 && maxY1 === maxY2 && segment1.start.x === segment2.start.x) {
-      return 'full'
-    }
+    if (segment1.start.x !== segment2.start.x) return 'none'
 
-    // Partial overlap: ranges intersect
-    if (maxY1 >= minY2 && minY1 <= maxY2 && segment1.start.x === segment2.start.x) {
-      return 'partial'
-    }
+    const pathFull = minY1 === minY2 && maxY1 === maxY2
+    const pathPartial = maxY1 >= minY2 && minY1 <= maxY2
+
+    if (!pathPartial) return 'none'
+    if (!heightsConflict(segment1, segment2)) return 'none'
+    return pathFull ? 'full' : 'partial'
   }
-
-  return 'none'
 }
 
 /**
@@ -225,11 +254,11 @@ export function validateSegmentHeights(segment: PathSegment): ValidationError[] 
         severity: 'error'
       })
     }
-  } else if (segment.type === 'ladder-rack') {
+  } else if (segment.type === 'copper-path') {
     if (segment.copperHeight === null || segment.copperHeight <= 0) {
       errors.push({
         field: 'copperHeight',
-        message: 'Copper height is required and must be positive for ladder-rack segments',
+        message: 'Copper height is required and must be positive for copper-path segments',
         severity: 'error'
       })
     }
@@ -298,10 +327,151 @@ export function validateSegment(
 }
 
 /**
+ * Validate special cabinets
+ */
+export function validateSpecialCabinets(room: Room): ValidationError[] {
+  const errors: ValidationError[] = []
+
+  // Validate network racks
+  for (const cabinet of room.specialCabinets.networkRacks) {
+    const validation = validateCabinetBounds(cabinet, room, room.coordinateFormat)
+    if (!validation.isValid) {
+      errors.push({
+        field: 'networkRacks',
+        message: validation.error || `Invalid network rack: ${cabinet}`,
+        severity: 'error'
+      })
+    }
+  }
+
+  // Validate half cabs
+  for (const cabinet of room.specialCabinets.halfCabs) {
+    const validation = validateCabinetBounds(cabinet, room, room.coordinateFormat)
+    if (!validation.isValid) {
+      errors.push({
+        field: 'halfCabs',
+        message: validation.error || `Invalid half cab: ${cabinet}`,
+        severity: 'error'
+      })
+    }
+  }
+
+  // Validate quarter cabs
+  for (const cabinet of room.specialCabinets.quarterCabs) {
+    const validation = validateCabinetBounds(cabinet, room, room.coordinateFormat)
+    if (!validation.isValid) {
+      errors.push({
+        field: 'quarterCabs',
+        message: validation.error || `Invalid quarter cab: ${cabinet}`,
+        severity: 'error'
+      })
+    }
+  }
+
+  return errors
+}
+
+/**
+ * Validate room metadata (ranges, coordinate format, etc.)
+ */
+export function validateRoomMetadata(room: Room): ValidationError[] {
+  const errors: ValidationError[] = []
+
+  // Validate coordinate format
+  if (room.coordinateFormat !== 'letters-first' && room.coordinateFormat !== 'numbers-first') {
+    errors.push({
+      field: 'coordinateFormat',
+      message: 'Invalid coordinate format (must be "letters-first" or "numbers-first")',
+      severity: 'error'
+    })
+  }
+
+  // Validate orientation if present
+  if (room.orientation && room.orientation !== 'numbers-vertical' && room.orientation !== 'numbers-horizontal') {
+    errors.push({
+      field: 'orientation',
+      message: 'Invalid orientation (must be "numbers-vertical" or "numbers-horizontal")',
+      severity: 'error'
+    })
+  }
+
+  // Validate tile size
+  if (room.tileSize <= 0) {
+    errors.push({
+      field: 'tileSize',
+      message: 'Tile size must be a positive number',
+      severity: 'error'
+    })
+  }
+
+  // Validate xyRange if present
+  if (room.xyRange) {
+    // Validate start coordinate
+    const startCoord = validateCoordinateFormat(
+      `${room.xyRange.start.x}${room.xyRange.start.y}`,
+      room.coordinateFormat
+    )
+    if (!startCoord.isValid) {
+      errors.push({
+        field: 'xyRange.start',
+        message: startCoord.error || 'Invalid start coordinate format',
+        severity: 'error'
+      })
+    }
+
+    // Validate end coordinate
+    const endCoord = validateCoordinateFormat(
+      `${room.xyRange.end.x}${room.xyRange.end.y}`,
+      room.coordinateFormat
+    )
+    if (!endCoord.isValid) {
+      errors.push({
+        field: 'xyRange.end',
+        message: endCoord.error || 'Invalid end coordinate format',
+        severity: 'error'
+      })
+    }
+
+    // Validate Y values are positive
+    if (room.xyRange.start.y < 1) {
+      errors.push({
+        field: 'xyRange.start.y',
+        message: 'Start Y coordinate must be at least 1',
+        severity: 'error'
+      })
+    }
+    if (room.xyRange.end.y < 1) {
+      errors.push({
+        field: 'xyRange.end.y',
+        message: 'End Y coordinate must be at least 1',
+        severity: 'error'
+      })
+    }
+  }
+
+  // Validate startCorner if present
+  if (room.startCorner && room.startCorner !== 'top-left' && room.startCorner !== 'top-right' && room.startCorner !== 'bottom-left' && room.startCorner !== 'bottom-right') {
+    errors.push({
+      field: 'startCorner',
+      message: 'Invalid start corner (must be top-left, top-right, bottom-left, or bottom-right)',
+      severity: 'error'
+    })
+  }
+
+  return errors
+}
+
+/**
  * Validate an entire room
  */
 export function validateRoom(room: Room): ValidationResult {
   const errors: ValidationError[] = []
+
+  // Validate metadata
+  errors.push(...validateRoomMetadata(room))
+
+  // Validate special cabinets
+  errors.push(...validateSpecialCabinets(room))
 
   // Validate each segment
   for (const segment of room.pathSegments) {
