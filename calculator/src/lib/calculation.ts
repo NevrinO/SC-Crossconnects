@@ -1,15 +1,22 @@
 import type { Room, PathSegment, CalculationResult, CabinetInfo } from '../types/room';
 import { CONSTANTS } from './constants';
-import { calculateRowDistance } from './char-utils';
+import { calculateXDistance } from './char-utils';
 
 function cabRangeCheck(aRange: string, zRange: string, value: string): boolean {
-  const rowOk = value.slice(0, 2) >= aRange.slice(0, 2) && value.slice(0, 2) <= zRange.slice(0, 2);
+  const row = value.slice(0, 2);
+  const aRow = aRange.slice(0, 2);
+  const zRow = zRange.slice(0, 2);
   const cabNum = parseInt(value.slice(2, 5), 10);
   if (isNaN(cabNum)) return false;
   const aRangeCab = parseInt(aRange.slice(2, 5), 10);
   const zRangeCab = parseInt(zRange.slice(2, 5), 10);
   if (isNaN(aRangeCab) || isNaN(zRangeCab)) return false;
   const cabOk = cabNum >= aRangeCab && cabNum <= zRangeCab;
+  // Convert row letters to numeric values for correct alphabetical comparison
+  const rowNum = calculateXDistance('AA', row, 1, 'letters-first');
+  const aRowNum = calculateXDistance('AA', aRow, 1, 'letters-first');
+  const zRowNum = calculateXDistance('AA', zRow, 1, 'letters-first');
+  const rowOk = rowNum >= aRowNum && rowNum <= zRowNum;
   return rowOk && cabOk;
 }
 
@@ -28,23 +35,33 @@ export function validateRackLocationInput(rackLoc: string): boolean {
   return patt.test(trimmed);
 }
 
-export function getCabType(loc: string): CabinetInfo {
+export function getCabType(loc: string, room: Room): CabinetInfo {
   // Normalize to uppercase for consistent comparison
   const normalized = loc.toUpperCase();
   // Strip port info (e.g., "FR132:1:5" -> "FR132") before suffix-based cabinet type detection
   const cabOnly = normalized.split(':')[0];
-  if (cabRangeCheck('EU108', 'EU122', cabOnly) || cabRangeCheck('FM155', 'GD155', cabOnly) || cabRangeCheck('IG085', 'IR089', cabOnly)) {
+
+  // Check against room's special cabinets
+  const { networkRacks, halfCabs, quarterCabs } = room.specialCabinets;
+
+  // Check for network rack
+  if (networkRacks.includes(cabOnly)) {
     // Extract panel number from format "CABINET:PANEL:PORT" (e.g., "EU108:1:5" -> panel "1")
     const parts = normalized.split(':');
     const panel = parts.length >= 2 ? parts[1] : '';
     return { type: 'network_rack', value: panel };
   }
-  if ((cabRangeCheck('FR132A', 'FS132B', cabOnly) || cabRangeCheck('FV132A', 'GD132B', cabOnly)) && /[A-D]$/i.test(cabOnly)) {
-    return { type: 'half_cab', value: cabOnly.slice(5, 6) };
+
+  // Check for half cabinet (must end with A-D)
+  if (halfCabs.includes(cabOnly) && /[A-D]$/i.test(cabOnly)) {
+    return { type: 'half_cab', value: cabOnly.slice(-1) };
   }
-  if (cabRangeCheck('FZ185A', 'GE185D', cabOnly) && /[A-D]$/i.test(cabOnly)) {
-    return { type: 'quarter_cab', value: cabOnly.slice(5, 6) };
+
+  // Check for quarter cabinet (must end with A-D)
+  if (quarterCabs.includes(cabOnly) && /[A-D]$/i.test(cabOnly)) {
+    return { type: 'quarter_cab', value: cabOnly.slice(-1) };
   }
+
   return { type: 'full_cab', value: '' };
 }
 
@@ -79,13 +96,13 @@ function applyCabinetAdjustments(len: number, cabInfo: CabinetInfo): number {
 }
 
 interface ParsedCabinet {
-  row: string;
-  cabinet: number;
+  x: string;
+  y: number;
   portInfo: string;
   raw: string;
 }
 
-function parseCabinetInput(input: string): ParsedCabinet | null {
+export function parseCabinetInput(input: string): ParsedCabinet | null {
   const raw = input.toUpperCase().trim();
   if (!validateRackLocationInput(raw)) return null;
 
@@ -100,20 +117,20 @@ function parseCabinetInput(input: string): ParsedCabinet | null {
     portInfo = `:${portMatch[2]}:${portMatch[3]}`;
   }
 
-  // Extract row and cabinet number
-  const row = cabStr.slice(0, 2);
-  let cabNumStr = cabStr.slice(2);
+  // Extract X and Y coordinates
+  const x = cabStr.slice(0, 2);
+  let yStr = cabStr.slice(2);
 
   // Remove trailing letter for half/quarter cabs
-  const suffix = cabNumStr.slice(-1);
+  const suffix = yStr.slice(-1);
   if (/[A-D]/.test(suffix)) {
-    cabNumStr = cabNumStr.slice(0, -1);
+    yStr = yStr.slice(0, -1);
   }
 
-  const cabinet = parseInt(cabNumStr, 10);
-  if (isNaN(cabinet)) return null;
+  const y = parseInt(yStr, 10);
+  if (isNaN(y)) return null;
 
-  return { row, cabinet, portInfo, raw: cabStr + portInfo };
+  return { x, y, portInfo, raw: cabStr + portInfo };
 }
 
 export function calculateManual(
@@ -129,8 +146,8 @@ export function calculateManual(
   if (!start || !end) return null;
 
   // Verify both cabinets are in the same room
-  const startRoom = getRoom(start.row + String(start.cabinet).padStart(3, '0'));
-  const endRoom = getRoom(end.row + String(end.cabinet).padStart(3, '0'));
+  const startRoom = getRoom(start.x + String(start.y).padStart(3, '0'));
+  const endRoom = getRoom(end.x + String(end.y).padStart(3, '0'));
   if (!startRoom || !endRoom || startRoom !== endRoom || startRoom !== room.id) {
     return null;
   }
@@ -151,50 +168,50 @@ export function calculateManual(
   // For room 10: path code is like "146" (position + height)
   let pathCode: string;
   if (room.id === '10') {
-    pathCode = String(segment.start.cabinet).padStart(2, '0') + String(height);
+    pathCode = String(segment.start.y).padStart(2, '0') + String(height);
   } else {
-    pathCode = segment.start.row + String(height);
+    pathCode = segment.start.x + String(height);
   }
 
   let len = height + offset + slack;
-  let sameRow = false;
+  let sameX = false;
 
   if (room.id === '10') {
     // Room 10: east-west rows, paths run north-south at positions 14/18
-    if (start.row === end.row) {
-      len += Math.abs(start.cabinet - end.cabinet) * tileSize;
-      sameRow = true;
+    if (start.x === end.x) {
+      len += Math.abs(start.y - end.y) * tileSize;
+      sameX = true;
     } else {
       // Old tool uses slice(3,5) on raw cabinet string (e.g., "CT105" -> "05", "CT12" -> "")
       // Reconstruct raw cabinet string and apply slice(3,5) to match exactly
-      const startRaw = start.row + String(start.cabinet);
-      const endRaw = end.row + String(end.cabinet);
+      const startRaw = start.x + String(start.y);
+      const endRaw = end.x + String(end.y);
       const startCabLastTwo = startRaw.slice(3, 5);
       const endCabLastTwo = endRaw.slice(3, 5);
-      const pathPos = String(segment.start.cabinet);
+      const pathPos = String(segment.start.y);
       len += (Math.abs(parseInt(startCabLastTwo || '0', 10) - parseInt(pathPos, 10)) +
         Math.abs(parseInt(pathPos, 10) - parseInt(endCabLastTwo || '0', 10))) * tileSize;
     }
-    // Row distance
-    len += calculateRowDistance(start.row, end.row, tileSize, room.rowFormat);
+    // X distance
+    len += calculateXDistance(start.x, end.x, tileSize, room.coordinateFormat);
   } else {
     // Room 14/28: north-south rows, paths run east-west along rows
-    const tempLen = Math.abs(start.cabinet - end.cabinet) * tileSize;
+    const tempLen = Math.abs(start.y - end.y) * tileSize;
     if (tempLen === 0) {
       // Same cabinet number (same row or different row same position)
-      len += calculateRowDistance(start.row, end.row, tileSize, room.rowFormat);
-      sameRow = start.row === end.row;
+      len += calculateXDistance(start.x, end.x, tileSize, room.coordinateFormat);
+      sameX = start.x === end.x;
     } else {
       len += tempLen;
       const pathRow = pathCode.slice(0, 2);
-      len += calculateRowDistance(start.row, pathRow, tileSize, room.rowFormat);
-      len += calculateRowDistance(pathRow, end.row, tileSize, room.rowFormat);
+      len += calculateXDistance(start.x, pathRow, tileSize, room.coordinateFormat);
+      len += calculateXDistance(pathRow, end.x, tileSize, room.coordinateFormat);
     }
   }
 
   // Apply cabinet type adjustments
-  const startInfo = getCabType(startInput.toUpperCase());
-  const endInfo = getCabType(endInput.toUpperCase());
+  const startInfo = getCabType(startInput.toUpperCase(), room);
+  const endInfo = getCabType(endInput.toUpperCase(), room);
   len = applyCabinetAdjustments(len, startInfo);
   len = applyCabinetAdjustments(len, endInfo);
 
@@ -208,7 +225,7 @@ export function calculateManual(
     lengthM,
     room: room.name,
     path: segment.name,
-    sameRow,
+    sameX,
   };
 }
 

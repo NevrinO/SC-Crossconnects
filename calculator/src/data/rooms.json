@@ -6,13 +6,18 @@
       "tileSize": 2,
       "offset": 4,
       "spilloverAdditionalLength": 4,
-      "rowFormat": "letters-first",
       "pathSegments": [
         {
           "id": "fiber-east-114",
           "name": "Fiber East (114)",
-          "start": { "row": "CT", "cabinet": 14 },
-          "end": { "row": "EW", "cabinet": 14 },
+          "start": {
+            "x": "CT",
+            "y": 14
+          },
+          "end": {
+            "x": "EW",
+            "y": 14
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
@@ -20,8 +25,14 @@
         {
           "id": "fiber-west-118",
           "name": "Fiber West (118)",
-          "start": { "row": "CT", "cabinet": 18 },
-          "end": { "row": "EW", "cabinet": 18 },
+          "start": {
+            "x": "CT",
+            "y": 18
+          },
+          "end": {
+            "x": "EW",
+            "y": 18
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
@@ -29,8 +40,14 @@
         {
           "id": "copper-east-114",
           "name": "Copper East (114)",
-          "start": { "row": "CT", "cabinet": 14 },
-          "end": { "row": "EW", "cabinet": 14 },
+          "start": {
+            "x": "CT",
+            "y": 14
+          },
+          "end": {
+            "x": "EW",
+            "y": 14
+          },
           "fiberHeight": null,
           "copperHeight": 4,
           "type": "ladder-rack"
@@ -38,18 +55,41 @@
         {
           "id": "copper-west-118",
           "name": "Copper West (118)",
-          "start": { "row": "CT", "cabinet": 18 },
-          "end": { "row": "EW", "cabinet": 18 },
+          "start": {
+            "x": "CT",
+            "y": 18
+          },
+          "end": {
+            "x": "EW",
+            "y": 18
+          },
           "fiberHeight": null,
           "copperHeight": 4,
           "type": "ladder-rack"
         }
       ],
       "specialCabinets": {
-        "networkRacks": ["EU108", "EU109", "EU110", "EU111", "EU112", "EU113", "EU114", "EU115", "EU116", "EU117", "EU118", "EU119", "EU120", "EU121", "EU122"],
+        "networkRacks": [
+          "EU108",
+          "EU109",
+          "EU110",
+          "EU111",
+          "EU112",
+          "EU113",
+          "EU114",
+          "EU115",
+          "EU116",
+          "EU117",
+          "EU118",
+          "EU119",
+          "EU120",
+          "EU121",
+          "EU122"
+        ],
         "halfCabs": [],
         "quarterCabs": []
-      }
+      },
+      "coordinateFormat": "letters-first"
     },
     {
       "id": "14",
@@ -57,68 +97,201 @@
       "tileSize": 2,
       "offset": 4,
       "spilloverAdditionalLength": 4,
-      "rowFormat": "letters-first",
       "pathSegments": [
         {
-          "id": "fiber-south-gd",
-          "name": "Fiber South (GD)",
-          "start": { "row": "GD", "cabinet": 132 },
-          "end": { "row": "GD", "cabinet": 185 },
-          "fiberHeight": 8,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "fiber-north-fm",
-          "name": "Fiber North (FM)",
-          "start": { "row": "FM", "cabinet": 132 },
-          "end": { "row": "FM", "cabinet": 185 },
-          "fiberHeight": 8,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "old-fiber-south-fz",
-          "name": "Old Fiber South (FZ)",
-          "start": { "row": "FZ", "cabinet": 132 },
-          "end": { "row": "FZ", "cabinet": 185 },
+          "id": "horizontal-132",
+          "name": "FK132-GN132",
+          "start": {
+            "x": "FK",
+            "y": 132
+          },
+          "end": {
+            "x": "GN",
+            "y": 132
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
         },
         {
-          "id": "old-fiber-north-fw",
+          "id": "horizontal-136",
+          "name": "FK136-GN136",
+          "start": {
+            "x": "FK",
+            "y": 136
+          },
+          "end": {
+            "x": "GN",
+            "y": 136
+          },
+          "fiberHeight": 6,
+          "copperHeight": null,
+          "type": "fiber-path"
+        },
+        {
+          "id": "horizontal-139",
+          "name": "FK139-GN139",
+          "start": {
+            "x": "FK",
+            "y": 139
+          },
+          "end": {
+            "x": "GN",
+            "y": 139
+          },
+          "fiberHeight": 6,
+          "copperHeight": null,
+          "type": "fiber-path"
+        },
+        {
+          "id": "horizontal-171",
+          "name": "FK171-GN171",
+          "start": {
+            "x": "FK",
+            "y": 171
+          },
+          "end": {
+            "x": "GN",
+            "y": 171
+          },
+          "fiberHeight": 6,
+          "copperHeight": null,
+          "type": "fiber-path"
+        },
+        {
+          "id": "horizontal-185",
+          "name": "FK185-GM185",
+          "start": {
+            "x": "FK",
+            "y": 185
+          },
+          "end": {
+            "x": "GM",
+            "y": 185
+          },
+          "fiberHeight": 6,
+          "copperHeight": null,
+          "type": "fiber-path"
+        },
+        {
+          "id": "vertical-fw",
           "name": "Old Fiber North (FW)",
-          "start": { "row": "FW", "cabinet": 132 },
-          "end": { "row": "FW", "cabinet": 185 },
+          "start": {
+            "x": "FW",
+            "y": 132
+          },
+          "end": {
+            "x": "FW",
+            "y": 185
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
         },
         {
-          "id": "copper-south-fz",
-          "name": "Copper South (FZ)",
-          "start": { "row": "FZ", "cabinet": 132 },
-          "end": { "row": "FZ", "cabinet": 185 },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "ladder-rack"
+          "id": "vertical-gd",
+          "name": "Fiber South (GD)",
+          "start": {
+            "x": "GD",
+            "y": 132
+          },
+          "end": {
+            "x": "GD",
+            "y": 185
+          },
+          "fiberHeight": 8,
+          "copperHeight": null,
+          "type": "fiber-path"
         },
         {
-          "id": "copper-north-fw",
-          "name": "Copper North (FW)",
-          "start": { "row": "FW", "cabinet": 132 },
-          "end": { "row": "FW", "cabinet": 185 },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "ladder-rack"
+          "id": "vertical-fz",
+          "name": "Old Fiber South (FZ)",
+          "start": {
+            "x": "FZ",
+            "y": 132
+          },
+          "end": {
+            "x": "FZ",
+            "y": 185
+          },
+          "fiberHeight": 6,
+          "copperHeight": null,
+          "type": "fiber-path"
         }
       ],
       "specialCabinets": {
-        "networkRacks": ["FM155", "FN155", "FO155", "FP155", "FQ155", "FR155", "FS155", "FT155", "FU155", "FV155", "FW155", "FX155", "FY155", "FZ155", "GA155", "GB155", "GC155", "GD155"],
-        "halfCabs": ["FR132A", "FR132B", "FS132A", "FS132B", "FV132A", "FV132B", "FW132A", "FW132B", "FX132A", "FX132B", "FY132A", "FY132B", "FZ132A", "FZ132B", "GA132A", "GA132B", "GB132A", "GB132B", "GC132A", "GC132B", "GD132A", "GD132B"],
-        "quarterCabs": ["FZ185A", "FZ185B", "FZ185C", "FZ185D", "GA185A", "GA185B", "GA185C", "GA185D", "GB185A", "GB185B", "GB185C", "GB185D", "GC185A", "GC185B", "GC185C", "GC185D", "GD185A", "GD185B", "GD185C", "GD185D", "GE185A", "GE185B", "GE185C", "GE185D"]
-      }
+        "networkRacks": [
+          "FM155",
+          "FN155",
+          "FO155",
+          "FP155",
+          "FQ155",
+          "FR155",
+          "FS155",
+          "FT155",
+          "FU155",
+          "FV155",
+          "FW155",
+          "FX155",
+          "FY155",
+          "FZ155",
+          "GA155",
+          "GB155",
+          "GC155",
+          "GD155"
+        ],
+        "halfCabs": [
+          "FR132A",
+          "FR132B",
+          "FS132A",
+          "FS132B",
+          "FV132A",
+          "FV132B",
+          "FW132A",
+          "FW132B",
+          "FX132A",
+          "FX132B",
+          "FY132A",
+          "FY132B",
+          "FZ132A",
+          "FZ132B",
+          "GA132A",
+          "GA132B",
+          "GB132A",
+          "GB132B",
+          "GC132A",
+          "GC132B",
+          "GD132A",
+          "GD132B"
+        ],
+        "quarterCabs": [
+          "FZ185A",
+          "FZ185B",
+          "FZ185C",
+          "FZ185D",
+          "GA185A",
+          "GA185B",
+          "GA185C",
+          "GA185D",
+          "GB185A",
+          "GB185B",
+          "GB185C",
+          "GB185D",
+          "GC185A",
+          "GC185B",
+          "GC185C",
+          "GC185D",
+          "GD185A",
+          "GD185B",
+          "GD185C",
+          "GD185D",
+          "GE185A",
+          "GE185B",
+          "GE185C",
+          "GE185D"
+        ]
+      },
+      "coordinateFormat": "letters-first"
     },
     {
       "id": "28",
@@ -126,13 +299,18 @@
       "tileSize": 2,
       "offset": 4,
       "spilloverAdditionalLength": 4,
-      "rowFormat": "letters-first",
       "pathSegments": [
         {
           "id": "fiber-south-is",
           "name": "Fiber South (IS)",
-          "start": { "row": "IS", "cabinet": 85 },
-          "end": { "row": "IS", "cabinet": 152 },
+          "start": {
+            "x": "IS",
+            "y": 85
+          },
+          "end": {
+            "x": "IS",
+            "y": 152
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
@@ -140,8 +318,14 @@
         {
           "id": "fiber-north-if",
           "name": "Fiber North (IF)",
-          "start": { "row": "IF", "cabinet": 85 },
-          "end": { "row": "IF", "cabinet": 152 },
+          "start": {
+            "x": "IF",
+            "y": 85
+          },
+          "end": {
+            "x": "IF",
+            "y": 152
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
@@ -149,8 +333,14 @@
         {
           "id": "fiber-hiq-hy",
           "name": "Fiber HIQ (HY)",
-          "start": { "row": "HY", "cabinet": 85 },
-          "end": { "row": "HY", "cabinet": 152 },
+          "start": {
+            "x": "HY",
+            "y": 85
+          },
+          "end": {
+            "x": "HY",
+            "y": 152
+          },
           "fiberHeight": 6,
           "copperHeight": null,
           "type": "fiber-path"
@@ -158,8 +348,14 @@
         {
           "id": "copper-south-is",
           "name": "Copper South (IS)",
-          "start": { "row": "IS", "cabinet": 85 },
-          "end": { "row": "IS", "cabinet": 152 },
+          "start": {
+            "x": "IS",
+            "y": 85
+          },
+          "end": {
+            "x": "IS",
+            "y": 152
+          },
           "fiberHeight": null,
           "copperHeight": 4,
           "type": "ladder-rack"
@@ -167,8 +363,14 @@
         {
           "id": "copper-north-if",
           "name": "Copper North (IF)",
-          "start": { "row": "IF", "cabinet": 85 },
-          "end": { "row": "IF", "cabinet": 152 },
+          "start": {
+            "x": "IF",
+            "y": 85
+          },
+          "end": {
+            "x": "IF",
+            "y": 152
+          },
           "fiberHeight": null,
           "copperHeight": 4,
           "type": "ladder-rack"
@@ -176,18 +378,86 @@
         {
           "id": "copper-hiq-hy",
           "name": "Copper HIQ (HY)",
-          "start": { "row": "HY", "cabinet": 85 },
-          "end": { "row": "HY", "cabinet": 152 },
+          "start": {
+            "x": "HY",
+            "y": 85
+          },
+          "end": {
+            "x": "HY",
+            "y": 152
+          },
           "fiberHeight": null,
           "copperHeight": 4,
           "type": "ladder-rack"
         }
       ],
       "specialCabinets": {
-        "networkRacks": ["IG085", "IH085", "II085", "IJ085", "IK085", "IL085", "IM085", "IN085", "IO085", "IP085", "IQ085", "IR085", "IG086", "IH086", "II086", "IJ086", "IK086", "IL086", "IM086", "IN086", "IO086", "IP086", "IQ086", "IR086", "IG087", "IH087", "II087", "IJ087", "IK087", "IL087", "IM087", "IN087", "IO087", "IP087", "IQ087", "IR087", "IG088", "IH088", "II088", "IJ088", "IK088", "IL088", "IM088", "IN088", "IO088", "IP088", "IQ088", "IR088", "IG089", "IH089", "II089", "IJ089", "IK089", "IL089", "IM089", "IN089", "IO089", "IP089", "IQ089", "IR089"],
+        "networkRacks": [
+          "IG085",
+          "IH085",
+          "II085",
+          "IJ085",
+          "IK085",
+          "IL085",
+          "IM085",
+          "IN085",
+          "IO085",
+          "IP085",
+          "IQ085",
+          "IR085",
+          "IG086",
+          "IH086",
+          "II086",
+          "IJ086",
+          "IK086",
+          "IL086",
+          "IM086",
+          "IN086",
+          "IO086",
+          "IP086",
+          "IQ086",
+          "IR086",
+          "IG087",
+          "IH087",
+          "II087",
+          "IJ087",
+          "IK087",
+          "IL087",
+          "IM087",
+          "IN087",
+          "IO087",
+          "IP087",
+          "IQ087",
+          "IR087",
+          "IG088",
+          "IH088",
+          "II088",
+          "IJ088",
+          "IK088",
+          "IL088",
+          "IM088",
+          "IN088",
+          "IO088",
+          "IP088",
+          "IQ088",
+          "IR088",
+          "IG089",
+          "IH089",
+          "II089",
+          "IJ089",
+          "IK089",
+          "IL089",
+          "IM089",
+          "IN089",
+          "IO089",
+          "IP089",
+          "IQ089",
+          "IR089"
+        ],
         "halfCabs": [],
         "quarterCabs": []
-      }
+      },
+      "coordinateFormat": "letters-first"
     }
   ]
 }

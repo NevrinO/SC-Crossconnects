@@ -1,44 +1,58 @@
-import type { RowFormat } from '../types/room';
+import type { CoordinateFormat } from '../types/room';
 
 /**
- * Convert 2-letter row to base-26 number (Excel-style column numbering).
+ * Convert 2-letter X coordinate to base-26 number (Excel-style column numbering).
  * AA=1, AB=2, ..., ZZ=676
  * O(1) time complexity.
  */
-function lettersToNumber(row: string): number {
-  if (row.length !== 2) {
-    throw new Error(`Row must be 2 letters, got: ${row}`);
+function lettersToNumber(x: string): number {
+  if (x.length !== 2) {
+    throw new Error(`X coordinate must be 2 letters, got: ${x}`);
   }
-  const upper = row.toUpperCase();
+  const upper = x.toUpperCase();
   const c1 = upper.charCodeAt(0) - 64; // A=1, B=2, ..., Z=26
   const c2 = upper.charCodeAt(1) - 64;
   return c1 * 26 + c2;
 }
 
 /**
- * Convert numeric row to number.
+ * Convert numeric X coordinate to number.
  * O(1) time complexity.
  */
-function numbersToNumber(row: string): number {
-  return parseInt(row, 10);
+function numbersToNumber(x: string): number {
+  return parseInt(x, 10);
 }
 
 /**
- * Calculate distance between two rows using O(1) mathematical conversion.
+ * Convert base-26 number to 2-letter X coordinate (inverse of lettersToNumber).
+ * 1=AA, 2=AB, ..., 26=AZ, 27=BA, ..., 676=ZZ
+ * O(1) time complexity.
+ */
+export function numberToLetters(num: number): string {
+  if (num < 1 || num > 676) {
+    throw new Error(`Number must be between 1 and 676, got: ${num}`);
+  }
+  const c1 = Math.floor((num - 1) / 26); // 0-25
+  const c2 = (num - 1) % 26; // 0-25
+  return String.fromCharCode(c1 + 65) + String.fromCharCode(c2 + 65);
+}
+
+/**
+ * Calculate distance between two X coordinates using O(1) mathematical conversion.
  * Supports both letters-first (AA-ZZ) and numbers-first (001-999) formats.
  */
-export function calculateRowDistance(
-  startRow: string,
-  endRow: string,
+export function calculateXDistance(
+  startX: string,
+  endX: string,
   tileSize: number,
-  format: RowFormat
+  format: CoordinateFormat
 ): number {
   const startNum = format === 'letters-first'
-    ? lettersToNumber(startRow)
-    : numbersToNumber(startRow);
+    ? lettersToNumber(startX)
+    : numbersToNumber(startX);
   const endNum = format === 'letters-first'
-    ? lettersToNumber(endRow)
-    : numbersToNumber(endRow);
+    ? lettersToNumber(endX)
+    : numbersToNumber(endX);
   return Math.abs(startNum - endNum) * tileSize;
 }
 

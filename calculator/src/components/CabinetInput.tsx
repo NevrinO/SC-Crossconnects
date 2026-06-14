@@ -1,24 +1,25 @@
 import { useState, useEffect } from 'react';
 import { validateRackLocationInput, getCabType } from '../lib/calculation';
-import type { CabinetInfo } from '../types/room';
+import type { CabinetInfo, Room } from '../types/room';
 
 interface CabinetInputProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  room: Room | null;
 }
 
-export default function CabinetInput({ label, value, onChange }: CabinetInputProps) {
+export default function CabinetInput({ label, value, onChange, room }: CabinetInputProps) {
   const [cabInfo, setCabInfo] = useState<CabinetInfo | null>(null);
   const isValid = validateRackLocationInput(value);
 
   useEffect(() => {
-    if (isValid) {
-      setCabInfo(getCabType(value));
+    if (isValid && room) {
+      setCabInfo(getCabType(value, room));
     } else {
       setCabInfo(null);
     }
-  }, [value, isValid]);
+  }, [value, isValid, room]);
 
   return (
     <div className="flex flex-col gap-1">

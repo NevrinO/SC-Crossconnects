@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import roomsData from './data/rooms.json';
 import type { Room, CalculationResult } from './types/room';
-import { calculateManual, getAvailablePaths, validateRackLocationInput } from './lib/calculation';
+import { calculateManual, validateRackLocationInput } from './lib/calculation';
 import { validateRooms } from './lib/validation';
+import { usePathCalculation } from './hooks/usePathCalculation';
 import RoomSelector from './components/RoomSelector';
 import CabinetInput from './components/CabinetInput';
 import CableTypeSelector from './components/CableTypeSelector';
@@ -12,58 +13,53 @@ import CalculateButton from './components/CalculateButton';
 import ResultsTable from './components/ResultsTable';
 
 export default function App() {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError] = useState<string | null>(() => {
+    try { validateRooms(roomsData); return null; }
+    catch (err) { return err instanceof Error ? err.message : 'Failed to load rooms data'; }
+  });
+  const [rooms] = useState<Room[]>(() => {
+    try { return validateRooms(roomsData); }
+    catch { return []; }
+  });
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [startCabinet, setStartCabinet] = useState('');
   const [endCabinet, setEndCabinet] = useState('');
   const [cableType, setCableType] = useState<'fiber' | 'copper' | null>(null);
-  const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const [slack, setSlack] = useState(0);
   const [results, setResults] = useState<CalculationResult[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Load and validate rooms data on mount
-  useEffect(() => {
-    try {
-      const validatedRooms = validateRooms(roomsData);
-      setRooms(validatedRooms);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Failed to load rooms data');
-    }
-  }, []);
-
   const selectedRoom = useMemo(
     () => rooms.find((r) => r.id === selectedRoomId) ?? null,
-    [selectedRoomId]
+    [rooms, selectedRoomId]
   );
 
-  const availablePaths = useMemo(() => {
-    if (!selectedRoom || !cableType) return [];
-    return getAvailablePaths(selectedRoom, cableType);
-  }, [selectedRoom, cableType]);
+  // Use pathfinding hook for automatic path calculation (only when room is selected)
+  const pathCalculation = usePathCalculation(
+    selectedRoom || undefined,
+    startCabinet,
+    endCabinet,
+    cableType
+  );
+  const { paths, selectedPath, isCalculating, error: pathError, selectPath } = pathCalculation;
 
   const canCalculate =
     selectedRoom &&
     cableType &&
-    selectedPathId &&
+    selectedPath &&
+    selectedPath.segments.length > 0 &&
     validateRackLocationInput(startCabinet) &&
     validateRackLocationInput(endCabinet);
 
   function handleCalculate() {
     setError(null);
-    if (!canCalculate || !selectedRoom || !cableType || !selectedPathId) return;
+    if (!canCalculate || !selectedRoom || !cableType || !selectedPath) return;
 
-    const segment = availablePaths.find((s) => s.id === selectedPathId);
-    if (!segment) {
-      setError('Selected path not found.');
-      return;
-    }
-
+    // Use the manual calculation with the selected path segments
     const result = calculateManual(
       startCabinet,
       endCabinet,
-      [segment],
+      selectedPath.segments,
       cableType,
       slack,
       selectedRoom
@@ -93,7 +89,6 @@ export default function App() {
           selectedRoomId={selectedRoomId}
           onSelect={(id) => {
             setSelectedRoomId(id);
-            setSelectedPathId(null);
             setError(null);
           }}
         />
@@ -103,11 +98,13 @@ export default function App() {
             label="Starting Rack"
             value={startCabinet}
             onChange={setStartCabinet}
+            room={selectedRoom}
           />
           <CabinetInput
             label="Ending Rack"
             value={endCabinet}
             onChange={setEndCabinet}
+            room={selectedRoom}
           />
         </div>
 
@@ -115,15 +112,16 @@ export default function App() {
           value={cableType}
           onChange={(type) => {
             setCableType(type);
-            setSelectedPathId(null);
             setError(null);
           }}
         />
 
         <PathSelector
-          segments={availablePaths}
-          selectedSegmentId={selectedPathId}
-          onSelect={setSelectedPathId}
+          paths={paths}
+          selectedPath={selectedPath}
+          onSelect={selectPath}
+          isCalculating={isCalculating}
+          error={pathError}
         />
 
         <SlackInput value={slack} onChange={setSlack} />

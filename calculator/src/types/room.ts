@@ -1,8 +1,8 @@
-export type RowFormat = 'letters-first' | 'numbers-first';
+export type CoordinateFormat = 'letters-first' | 'numbers-first';
 
 export interface GridPoint {
-  row: string;
-  cabinet: number;
+  x: string;  // Row letter (e.g., "FZ", "GG")
+  y: number; // Cabinet number (e.g., 171, 185)
 }
 
 export interface PathSegment {
@@ -29,7 +29,7 @@ export interface Room {
   spilloverAdditionalLength: number;
   pathSegments: PathSegment[];
   specialCabinets: SpecialCabinets;
-  rowFormat: RowFormat;
+  coordinateFormat: CoordinateFormat;
 }
 
 export interface CalculationResult {
@@ -39,7 +39,7 @@ export interface CalculationResult {
   lengthM: number;
   room: string;
   path: string;
-  sameRow: boolean;
+  sameX: boolean;
 }
 
 export interface CabinetInfo {
