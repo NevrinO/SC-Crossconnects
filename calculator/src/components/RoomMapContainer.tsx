@@ -190,14 +190,14 @@ export function RoomMapContainer({
     }
 
     // Feature 3: Keyboard shortcuts for map interaction
-    if (e.key === 's' || e.key === 'S') {
-      // S — next click sets Start
+    if (e.key === '1') {
+      // 1 — next click sets Start
       setClickMode('start')
       return
     }
 
-    if (e.key === 'f' || e.key === 'F') {
-      // F — next click sets End
+    if (e.key === '2') {
+      // 2 — next click sets End
       setClickMode('end')
       return
     }
@@ -225,12 +225,12 @@ export function RoomMapContainer({
     }
 
     // Navigation shortcuts
-    if (e.key === '+' || e.key === '=') {
+    if (e.key === 'e' || e.key === 'E') {
       handleZoomIn()
       return
     }
 
-    if (e.key === '-' || e.key === '_') {
+    if (e.key === 'q' || e.key === 'Q') {
       handleZoomOut()
       return
     }
@@ -241,7 +241,7 @@ export function RoomMapContainer({
       return
     }
 
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
       e.preventDefault()
       setPan(p => ({ ...p, y: p.y - 50 }))
       return
@@ -309,7 +309,7 @@ export function RoomMapContainer({
   return (
     <div className="flex flex-col h-full select-none">
       <div className="mb-2">
-        <p className="text-xs text-gray-500">Click to select cabinets &nbsp;•&nbsp; Right-click drag: pan &nbsp;•&nbsp; +/− to zoom &nbsp;•&nbsp; WASD/Arrows: pan &nbsp;•&nbsp; R to reset</p>
+        <p className="text-xs text-gray-500">Click to select cabinets &nbsp;•&nbsp; Right-click drag: pan &nbsp;•&nbsp; E/Q: zoom &nbsp;•&nbsp; WASD/Arrows: pan &nbsp;•&nbsp; R: reset &nbsp;•&nbsp; 1/2: set Start/End &nbsp;•&nbsp; X: swap &nbsp;•&nbsp; Enter: calculate</p>
       </div>
       <div className="flex items-center gap-2 mb-2">
         <button

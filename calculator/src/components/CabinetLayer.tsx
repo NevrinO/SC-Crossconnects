@@ -126,21 +126,32 @@ export function CabinetLayer({
                 <rect
                   x={screenPos.x + cellSize / 2}
                   y={screenPos.y - 10}
-                  width={80}
-                  height={24}
+                  width={100}
+                  height={36}
                   fill="#1f2937"
                   rx={4}
                   opacity={0.9}
                 />
                 <text
-                  x={screenPos.x + cellSize / 2 + 40}
-                  y={screenPos.y + 2}
+                  x={screenPos.x + cellSize / 2 + 50}
+                  y={screenPos.y - 2}
                   textAnchor="middle"
                   fontSize={11}
                   fill="white"
                   dominantBaseline="middle"
+                  fontWeight="bold"
                 >
                   {cabinet.id}
+                </text>
+                <text
+                  x={screenPos.x + cellSize / 2 + 50}
+                  y={screenPos.y + 12}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fill="#9ca3af"
+                  dominantBaseline="middle"
+                >
+                  {cabinet.type.replace('_', ' ')}
                 </text>
               </g>
             )}

@@ -6,6 +6,7 @@ import { calculateManual, validateRackLocationInput } from './lib/calculation';
 import { validateRooms } from './lib/validation';
 import { usePathCalculation } from './hooks/usePathCalculation';
 import { initializeSessionCleanup } from './lib/storage';
+import type { StoredSession } from './lib/storage';
 import RoomSelector from './components/RoomSelector';
 import CabinetInput from './components/CabinetInput';
 import CableTypeSelector from './components/CableTypeSelector';
@@ -88,6 +89,26 @@ export default function App() {
     }
 
     setResults((prev) => [...prev, result]);
+  }
+
+  function handleViewOnMap(session: StoredSession) {
+    // Use the first result from the session to populate the map
+    const firstResult = session.results[0];
+    if (!firstResult) return;
+
+    // Find the room by ID
+    const room = rooms.find(r => r.id === firstResult.room);
+    if (!room) return;
+
+    // Set all the state to match the session
+    setSelectedRoomId(firstResult.room);
+    setStartCabinet(firstResult.start);
+    setEndCabinet(firstResult.end);
+    setCableType(firstResult.cableType);
+    setError(null);
+
+    // Switch to the Room Map tab
+    setActiveTab('roommap');
   }
 
   return (
@@ -270,6 +291,7 @@ export default function App() {
         <SessionsPanel
           currentResults={results}
           onLoadSession={(sessionResults) => setResults(sessionResults)}
+          onViewOnMap={handleViewOnMap}
         />
       )}
 

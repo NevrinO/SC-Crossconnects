@@ -154,11 +154,14 @@ export function MapControls({
           </div>
           <h3 className="font-semibold mt-3 mb-2">Keyboard Shortcuts</h3>
           <div className="text-xs text-gray-600 space-y-1">
-            <div><kbd className="px-1 bg-gray-200 rounded">S</kbd> — Next click sets Start</div>
-            <div><kbd className="px-1 bg-gray-200 rounded">F</kbd> — Next click sets End</div>
+            <div><kbd className="px-1 bg-gray-200 rounded">1</kbd> — Next click sets Start</div>
+            <div><kbd className="px-1 bg-gray-200 rounded">2</kbd> — Next click sets End</div>
             <div><kbd className="px-1 bg-gray-200 rounded">Esc</kbd> — Clear both Start and End</div>
             <div><kbd className="px-1 bg-gray-200 rounded">Enter</kbd> — Trigger Calculate</div>
             <div><kbd className="px-1 bg-gray-200 rounded">X</kbd> — Swap Start and End</div>
+            <div><kbd className="px-1 bg-gray-200 rounded">R</kbd> — Reset zoom</div>
+            <div><kbd className="px-1 bg-gray-200 rounded">E/Q</kbd> — Zoom in/out</div>
+            <div><kbd className="px-1 bg-gray-200 rounded">WASD/Arrows</kbd> — Pan</div>
           </div>
         </div>
       )}
