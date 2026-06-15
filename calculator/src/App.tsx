@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import roomsData from './data/rooms.json';
 import type { Room, CalculationResult } from './types/room';
@@ -45,6 +45,14 @@ export default function App() {
   const [slack, setSlack] = useState(0);
   const [results, setResults] = useState<CalculationResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  
+  // Undo system: tracks operations to support single-level undo
+  // Note: This is a single-level undo (no redo). For multi-undo, would need a stack.
+  type UndoAction = { type: 'add'; result: CalculationResult; index: number } | { type: 'remove'; results: CalculationResult[] };
+  const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
 
   const selectedRoom = useMemo(
     () => rooms.find((r) => r.id === selectedRoomId) ?? null,
@@ -87,7 +95,13 @@ export default function App() {
       return;
     }
 
-    setResults((prev) => [...prev, result]);
+    setResults((prev) => {
+      const newResults = [...prev, result];
+      // Track this as an 'add' operation - undo should remove it by index
+      setUndoAction({ type: 'add', result, index: prev.length });
+      setShowUndo(true);
+      return newResults;
+    });
   }
 
   function handleViewOnMap(session: StoredSession) {
@@ -108,6 +122,98 @@ export default function App() {
 
     // Switch to the Manual Calculation tab (map is now embedded there)
     setActiveTab('manual');
+  }
+
+  function handleEditRow(index: number) {
+    const result = results[index];
+    if (!result) return;
+
+    // Pre-fill form fields from the result
+    setSelectedRoomId(result.room);
+    setStartCabinet(result.startCab);
+    setEndCabinet(result.endCab);
+    setCableType(result.cableType);
+    setSlack(0); // Reset slack to default
+    setError(null);
+
+    // Remove the row from results and track as undoable remove operation
+    setResults(prev => {
+      const removed = prev[index];
+      const newResults = prev.filter((_, i) => i !== index);
+      setUndoAction({ type: 'remove', results: [removed] });
+      setShowUndo(true);
+      return newResults;
+    });
+
+    // Show editing message
+    setEditMessage('Editing row — original removed. Recalculate to re-add.');
+    setTimeout(() => setEditMessage(null), 5000);
+  }
+
+  function handleQtyChange(index: number, qty: number) {
+    setResults(prev => prev.map((r, i) => 
+      i === index ? { ...r, qty } : r
+    ));
+  }
+
+  function handleDeleteSelected(indices: number[]) {
+    // Store all removed rows for undo
+    const sortedIndices = [...indices].sort((a, b) => b - a);
+    const removedRows = sortedIndices.map(i => results[i]);
+    
+    setResults(prev => prev.filter((_, i) => !indices.includes(i)));
+    // Track this as a 'remove' operation - undo should restore all removed rows
+    setUndoAction({ type: 'remove', results: removedRows });
+    setShowUndo(true);
+  }
+
+  function handleClearAll() {
+    if (results.length > 0) {
+      const allRows = [...results];
+      setResults([]);
+      // Track this as a 'remove' operation - undo should restore all rows
+      setUndoAction({ type: 'remove', results: allRows });
+      setShowUndo(true);
+    }
+  }
+
+  const handleUndo = useCallback(() => {
+    if (!undoAction) return;
+    
+    if (undoAction.type === 'add') {
+      // Undo an add: remove the result at the stored index
+      setResults(prev => prev.filter((_, i) => i !== undoAction.index));
+    } else if (undoAction.type === 'remove') {
+      // Undo a remove: restore all removed rows
+      setResults(prev => [...prev, ...undoAction.results]);
+    }
+    
+    setUndoAction(null);
+    setShowUndo(false);
+  }, [undoAction]);
+
+  // Handle Ctrl+Z for undo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoAction]);
+
+  function handleFormKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && canCalculate) {
+      // Don't trigger if focus is in a text input within the form
+      const activeElement = document.activeElement;
+      if (activeElement && e.currentTarget.contains(activeElement) && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      e.preventDefault();
+      handleCalculate();
+    }
   }
 
   return (
@@ -174,7 +280,7 @@ export default function App() {
         <>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
             {/* Left column - inputs */}
-            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm" onKeyDown={handleFormKeyDown}>
             <RoomSelector
               rooms={rooms}
               selectedRoomId={selectedRoomId}
@@ -307,17 +413,30 @@ export default function App() {
 
           {/* Results - full width below */}
           <div className="mt-6">
-            <ResultsTable results={results} />
-
-            {results.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setResults([])}
-                className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
-              >
-                Clear results
-              </button>
+            {editMessage && (
+              <div className="mb-4 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                {editMessage}
+              </div>
             )}
+            {showUndo && undoAction && (
+              <div className="mb-4 flex items-center gap-2 rounded-md bg-yellow-50 px-3 py-2 text-sm text-yellow-700">
+                <span>Last action can be undone</span>
+                <button
+                  onClick={handleUndo}
+                  className="font-medium underline hover:text-yellow-800"
+                >
+                  Undo
+                </button>
+                <span className="text-xs text-yellow-600">(Ctrl+Z)</span>
+              </div>
+            )}
+            <ResultsTable 
+              results={results} 
+              onEditRow={handleEditRow} 
+              onQtyChange={handleQtyChange} 
+              onDeleteSelected={handleDeleteSelected}
+              onClearAll={handleClearAll}
+            />
           </div>
         </>
       )}
@@ -335,7 +454,8 @@ export default function App() {
               room: r.room || '',
               path: r.path || '',
               sameX: false,
-              cableType: r.cableType
+              cableType: r.cableType,
+              qty: 1 // Default quantity for imported rows
             }));
           setResults(converted);
         }} />
@@ -346,6 +466,8 @@ export default function App() {
           currentResults={results}
           onLoadSession={(sessionResults) => setResults(sessionResults)}
           onViewOnMap={handleViewOnMap}
+          showSaveDialog={showSaveDialog}
+          setShowSaveDialog={setShowSaveDialog}
         />
       )}
     </div>

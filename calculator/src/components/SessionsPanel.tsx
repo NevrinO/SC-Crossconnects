@@ -7,12 +7,16 @@ interface SessionsPanelProps {
   onLoadSession: (results: CalculationResult[]) => void;
   onViewOnMap: (session: StoredSession) => void;
   currentResults: CalculationResult[];
+  showSaveDialog?: boolean;
+  setShowSaveDialog?: (show: boolean) => void;
 }
 
-export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResults }: SessionsPanelProps) {
+export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResults, showSaveDialog: externalShowSaveDialog, setShowSaveDialog: externalSetShowSaveDialog }: SessionsPanelProps) {
   const [sessions, setSessions] = useState<StoredSession[]>([]);
   const [sessionName, setSessionName] = useState('');
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [internalShowSaveDialog, setInternalShowSaveDialog] = useState(false);
+  const showSaveDialog = externalShowSaveDialog ?? internalShowSaveDialog;
+  const setShowSaveDialog = externalSetShowSaveDialog ?? setInternalShowSaveDialog;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,7 +43,8 @@ export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResul
         cableType: r.cableType,
         pathName: r.path,
         feet: r.lengthFt,
-        meters: r.lengthM
+        meters: r.lengthM,
+        qty: r.qty // Include quantity field
       }))
     };
 
@@ -75,15 +80,25 @@ export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResul
       room: r.room,
       path: r.pathName,
       sameX: false,
-      cableType: r.cableType
+      cableType: r.cableType,
+      qty: r.qty // Restore quantity field (defaults to 1 if not provided)
     }));
     onLoadSession(results);
   };
 
   const handleExportSession = (session: StoredSession) => {
-    const csv = 'Start,End,Room,Cable Type,Feet,Meters,Path\n' + 
+    // Proper CSV escaping per RFC 4180: escape embedded quotes by doubling them
+    const escapeCsv = (value: string | number) => {
+      const str = String(value);
+      const escaped = str.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+    
+    const csv = 'Start,End,Room,Cable Type,Qty,Feet,Meters,Path\n' + 
       session.results.map(r => 
-        `"${r.start}","${r.end}","${r.room}","${r.cableType}",${r.feet.toFixed(2)},${r.meters.toFixed(2)},"${r.pathName}"`
+        [r.start, r.end, r.room, r.cableType, r.qty ?? 1, r.feet.toFixed(2), r.meters.toFixed(2), r.pathName]
+          .map(escapeCsv)
+          .join(',')
       ).join('\n');
     
     const blob = new Blob([csv], { type: 'text/csv' });

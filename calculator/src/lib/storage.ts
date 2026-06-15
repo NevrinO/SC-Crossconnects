@@ -15,6 +15,7 @@ export interface CalculationRecord {
   pathName: string;
   feet: number;
   meters: number;
+  qty?: number; // Quantity field (defaults to 1 if not provided)
 }
 
 const STORAGE_KEY = 'crossconnect_sessions';

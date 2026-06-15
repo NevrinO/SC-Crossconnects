@@ -53,6 +53,7 @@ export interface CalculationResult {
   sameX: boolean;
   cableType: 'fiber' | 'copper';
   turnCount?: number;
+  qty?: number; // Quantity field (defaults to 1 if not provided, valid range: 1-99)
 }
 
 export interface CabinetInfo {
