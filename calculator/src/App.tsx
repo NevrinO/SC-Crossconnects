@@ -15,6 +15,8 @@ import CalculateButton from './components/CalculateButton';
 import ResultsTable from './components/ResultsTable';
 import CsvImport from './components/CsvImport';
 import SessionsPanel from './components/SessionsPanel';
+import { RoomMapContainer } from './components/RoomMapContainer';
+import { GridLayer } from './components/GridLayer';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -31,7 +33,7 @@ export default function App() {
     initializeSessionCleanup();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions' | 'roommap'>('manual');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [startCabinet, setStartCabinet] = useState('');
   const [endCabinet, setEndCabinet] = useState('');
@@ -142,6 +144,19 @@ export default function App() {
         >
           Saved Sessions
         </button>
+        <button
+          onClick={() => setActiveTab('roommap')}
+          disabled={!selectedRoom}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'roommap'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : !selectedRoom
+              ? 'text-gray-400 cursor-not-allowed'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Room Map
+        </button>
       </div>
 
       {activeTab === 'manual' && (
@@ -237,6 +252,26 @@ export default function App() {
           currentResults={results}
           onLoadSession={(sessionResults) => setResults(sessionResults)}
         />
+      )}
+
+      {activeTab === 'roommap' && selectedRoom && (
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" style={{ height: 'calc(100vh - 200px)', minHeight: '600px' }}>
+          <RoomMapContainer
+            room={selectedRoom}
+            startCabinet={startCabinet}
+            endCabinet={endCabinet}
+            onSelectStart={setStartCabinet}
+            onSelectEnd={setEndCabinet}
+          >
+            {({ bounds, cellSize, orientation }) => (
+              <GridLayer
+                bounds={bounds}
+                cellSize={cellSize}
+                orientation={orientation}
+              />
+            )}
+          </RoomMapContainer>
+        </div>
       )}
     </div>
   );

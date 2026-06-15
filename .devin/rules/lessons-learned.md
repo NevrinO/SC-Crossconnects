@@ -325,3 +325,7 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 75. Complete Parent-Child Integration When Adding Component Props
 - **Rule**: When adding new callback props or custom events to child components, immediately implement the corresponding handlers in the parent component.
 - **Guardrail**: Adding props like `onCabinetChange` to a child component without implementing the handler in the parent creates non-functional features. The child component will check `if (onCabinetChange)` and silently do nothing when the prop is undefined. Similarly, dispatching custom events without adding listeners in the parent means the events are lost. Always implement the full data flow: child prop → parent handler → state update → prop re-pass, before marking the feature complete.
+
+### 76. Consistent Size Limits Across All Range Generation
+- **Rule**: When implementing size limits for range generation, apply the limits consistently to all similar operations in the same function or module.
+- **Guardrail**: If a function generates multiple ranges (e.g., X-axis and Y-axis labels), and one range uses a dedicated function with size limits (e.g., `generateLetterRange` with maxCount), the other range generation must also enforce equivalent limits. Inline loops that generate arrays without size checks create DoS vulnerabilities even when sibling operations are protected. Either extract the inline loop into a size-limited helper function, or add explicit size validation before the loop.
