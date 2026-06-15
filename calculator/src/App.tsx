@@ -66,11 +66,11 @@ export default function App() {
     setError(null);
     if (!canCalculate || !selectedRoom || !cableType || !selectedPath) return;
 
-    // Use the manual calculation with the selected path segments
+    // Use the manual calculation with the selected path result
     const result = calculateManual(
       startCabinet,
       endCabinet,
-      selectedPath.segments,
+      selectedPath,
       cableType,
       slack,
       selectedRoom

@@ -1,4 +1,5 @@
 import type { Room, PathSegment, CalculationResult, CabinetInfo } from '../types/room';
+import type { PathResult } from './pathfinding';
 import { CONSTANTS } from './constants';
 import { calculateXDistance } from './char-utils';
 
@@ -136,7 +137,7 @@ export function parseCabinetInput(input: string): ParsedCabinet | null {
 export function calculateManual(
   startInput: string,
   endInput: string,
-  selectedSegments: PathSegment[],
+  pathResult: PathResult,
   cableType: 'fiber' | 'copper',
   slack: number,
   room: Room
@@ -153,63 +154,61 @@ export function calculateManual(
   }
 
   const tileSize = room.tileSize;
-  const offset = room.offset;
 
-  // Get the primary selected segment (Phase 1a uses single segment selection)
-  const segment = selectedSegments[0];
-  if (!segment) return null;
-
-  // Determine path height based on cable type
-  const height = cableType === 'fiber' ? segment.fiberHeight : segment.copperHeight;
-  if (height === null) return null;
-
-  // Build the path code similar to old tool for calculation compatibility
-  // For room 14/28: path code is like "GD8" (row + height)
-  // For room 10: path code is like "146" (position + height)
-  let pathCode: string;
-  if (room.id === '10') {
-    pathCode = String(segment.start.y).padStart(2, '0') + String(height);
+  // Calculate tray distance based on the path segments
+  // For multi-segment paths, use pre-calculated totalDistance from pathfinding (already includes spillover)
+  // For single-segment paths, calculate using the original formula
+  let len: number;
+  if (pathResult.segments.length > 1) {
+    // Multi-segment case: use pathfinding's totalDistance (already includes tray distance + spillover)
+    len = pathResult.totalDistance + slack;
   } else {
-    pathCode = segment.start.x + String(height);
+    // Single-segment case: calculate using original formula
+    const segment = pathResult.segments[0];
+    if (!segment) return null;
+
+    let totalTrayDistance: number;
+    // Use orientation field if available, otherwise fall back to room ID
+    const isNumbersHorizontal = room.orientation === 'numbers-horizontal' || room.id === '10';
+    if (isNumbersHorizontal) {
+      // Room 10: east-west rows, paths run north-south at positions 14/18
+      if (start.x === end.x) {
+        totalTrayDistance = Math.abs(start.y - end.y) * tileSize;
+      } else {
+        // Old tool uses slice(3,5) on raw cabinet string
+        const startRaw = start.x + String(start.y);
+        const endRaw = end.x + String(end.y);
+        const startCabLastTwo = startRaw.slice(3, 5);
+        const endCabLastTwo = endRaw.slice(3, 5);
+        const pathPos = String(segment.start.y);
+        totalTrayDistance = (Math.abs(parseInt(startCabLastTwo || '0', 10) - parseInt(pathPos, 10)) +
+          Math.abs(parseInt(pathPos, 10) - parseInt(endCabLastTwo || '0', 10))) * tileSize;
+      }
+      // X distance
+      totalTrayDistance += calculateXDistance(start.x, end.x, tileSize, room.coordinateFormat);
+    } else {
+      // Room 14/28: north-south rows, paths run east-west along rows
+      const tempLen = Math.abs(start.y - end.y) * tileSize;
+      if (tempLen === 0) {
+        // Same cabinet number (same row or different row same position)
+        totalTrayDistance = calculateXDistance(start.x, end.x, tileSize, room.coordinateFormat);
+      } else {
+        totalTrayDistance = tempLen;
+        const pathRow = segment.start.x;
+        totalTrayDistance += calculateXDistance(start.x, pathRow, tileSize, room.coordinateFormat);
+        totalTrayDistance += calculateXDistance(pathRow, end.x, tileSize, room.coordinateFormat);
+      }
+    }
+
+    // Single-segment: use both entry and exit spillover individually
+    const spilloverCost = pathResult.entrySpillover + pathResult.exitSpillover + pathResult.transferSpillovers;
+    len = totalTrayDistance + spilloverCost + slack;
   }
 
-  let len = height + offset + slack;
-  let sameX = false;
+  // Determine sameX flag based on cabinet positions
+  const sameX = start.x === end.x;
 
-  if (room.id === '10') {
-    // Room 10: east-west rows, paths run north-south at positions 14/18
-    if (start.x === end.x) {
-      len += Math.abs(start.y - end.y) * tileSize;
-      sameX = true;
-    } else {
-      // Old tool uses slice(3,5) on raw cabinet string (e.g., "CT105" -> "05", "CT12" -> "")
-      // Reconstruct raw cabinet string and apply slice(3,5) to match exactly
-      const startRaw = start.x + String(start.y);
-      const endRaw = end.x + String(end.y);
-      const startCabLastTwo = startRaw.slice(3, 5);
-      const endCabLastTwo = endRaw.slice(3, 5);
-      const pathPos = String(segment.start.y);
-      len += (Math.abs(parseInt(startCabLastTwo || '0', 10) - parseInt(pathPos, 10)) +
-        Math.abs(parseInt(pathPos, 10) - parseInt(endCabLastTwo || '0', 10))) * tileSize;
-    }
-    // X distance
-    len += calculateXDistance(start.x, end.x, tileSize, room.coordinateFormat);
-  } else {
-    // Room 14/28: north-south rows, paths run east-west along rows
-    const tempLen = Math.abs(start.y - end.y) * tileSize;
-    if (tempLen === 0) {
-      // Same cabinet number (same row or different row same position)
-      len += calculateXDistance(start.x, end.x, tileSize, room.coordinateFormat);
-      sameX = start.x === end.x;
-    } else {
-      len += tempLen;
-      const pathRow = pathCode.slice(0, 2);
-      len += calculateXDistance(start.x, pathRow, tileSize, room.coordinateFormat);
-      len += calculateXDistance(pathRow, end.x, tileSize, room.coordinateFormat);
-    }
-  }
-
-  // Apply cabinet type adjustments
+  // Apply cabinet type adjustments (only once at start and end)
   const startInfo = getCabType(startInput.toUpperCase(), room);
   const endInfo = getCabType(endInput.toUpperCase(), room);
   len = applyCabinetAdjustments(len, startInfo);
@@ -224,7 +223,7 @@ export function calculateManual(
     lengthFt,
     lengthM,
     room: room.name,
-    path: segment.name,
+    path: pathResult.pathName,
     sameX,
     cableType,
   };
@@ -256,7 +255,21 @@ export function calculateShortestPath(
   let shortestLength = Infinity;
 
   for (const path of availablePaths) {
-    const result = calculateManual(start, end, [path], cableType, slack, room);
+    // Build a minimal PathResult for single-segment calculation
+    const pathResult: import('./pathfinding').PathResult = {
+      segments: [path],
+      nodes: [path.start.x + '-' + path.start.y, path.end.x + '-' + path.end.y],
+      entrySpillover: cableType === 'fiber' ? (path.fiberHeight ?? 0) + room.spilloverAdditionalLength : (path.copperHeight ?? 0) + room.spilloverAdditionalLength,
+      exitSpillover: cableType === 'fiber' ? (path.fiberHeight ?? 0) + room.spilloverAdditionalLength : (path.copperHeight ?? 0) + room.spilloverAdditionalLength,
+      transferSpillovers: 0,
+      totalTrayDistance: 0, // Will be calculated by calculateManual using the pathfinding approach
+      totalDistance: 0,
+      pathName: path.name,
+      isShortest: true,
+      percentOverShortest: 0,
+    };
+
+    const result = calculateManual(start, end, pathResult, cableType, slack, room);
     if (result && result.lengthFt < shortestLength) {
       shortestResult = result;
       shortestLength = result.lengthFt;

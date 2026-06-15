@@ -50,7 +50,7 @@
           },
           "fiberHeight": null,
           "copperHeight": 4,
-          "type": "ladder-rack"
+          "type": "copper-path"
         },
         {
           "id": "copper-west-118",
@@ -65,7 +65,7 @@
           },
           "fiberHeight": null,
           "copperHeight": 4,
-          "type": "ladder-rack"
+          "type": "copper-path"
         }
       ],
       "specialCabinets": {
@@ -89,7 +89,13 @@
         "halfCabs": [],
         "quarterCabs": []
       },
-      "coordinateFormat": "letters-first"
+      "coordinateFormat": "letters-first",
+      "orientation": "numbers-horizontal",
+      "xyRange": {
+        "start": { "x": "CT", "y": 105 },
+        "end": { "x": "EW", "y": 129 }
+      },
+      "startCorner": "top-left"
     },
     {
       "id": "14",
@@ -291,7 +297,13 @@
           "GE185D"
         ]
       },
-      "coordinateFormat": "letters-first"
+      "coordinateFormat": "letters-first",
+      "orientation": "numbers-vertical",
+      "xyRange": {
+        "start": { "x": "FJ", "y": 132 },
+        "end": { "x": "GN", "y": 185 }
+      },
+      "startCorner": "top-left"
     },
     {
       "id": "28",
@@ -358,7 +370,7 @@
           },
           "fiberHeight": null,
           "copperHeight": 4,
-          "type": "ladder-rack"
+          "type": "copper-path"
         },
         {
           "id": "copper-north-if",
@@ -373,7 +385,7 @@
           },
           "fiberHeight": null,
           "copperHeight": 4,
-          "type": "ladder-rack"
+          "type": "copper-path"
         },
         {
           "id": "copper-hiq-hy",
@@ -388,7 +400,7 @@
           },
           "fiberHeight": null,
           "copperHeight": 4,
-          "type": "ladder-rack"
+          "type": "copper-path"
         }
       ],
       "specialCabinets": {
@@ -457,7 +469,13 @@
         "halfCabs": [],
         "quarterCabs": []
       },
-      "coordinateFormat": "letters-first"
+      "coordinateFormat": "letters-first",
+      "orientation": "numbers-vertical",
+      "xyRange": {
+        "start": { "x": "HM", "y": 85 },
+        "end": { "x": "IV", "y": 152 }
+      },
+      "startCorner": "top-left"
     }
   ]
 }

@@ -9,6 +9,7 @@ calculator/dist
 dist
 *.local
 *.tsbuildinfo
+.vite
 
 # Logs
 npm-debug.log*

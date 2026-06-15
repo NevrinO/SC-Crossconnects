@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { calculateManual, getAvailablePaths, getCabType } from './calculation';
+import { calculateManual, getCabType } from './calculation';
 import { calculateXDistance } from './char-utils';
 import { validateRooms } from './validation';
 import { findShortestPath, findKShortestPaths, calculateSpillover, calculateCabinetHeight } from './pathfinding';
@@ -77,11 +77,24 @@ const rooms = validateRooms(roomsData);
 
 test('Room 10 CT105 to CT110 fiber', () => {
   const room10 = rooms.find(r => r.id === '10')!;
-  const paths = getAvailablePaths(room10, 'fiber');
-  const seg = paths.find(p => p.id === 'fiber-east-114')!;
-  const result = calculateManual('CT105', 'CT110', [seg], 'fiber', 0, room10);
+  const seg = room10.pathSegments.find(p => p.id === 'fiber-east-114')!;
+  // Build a minimal PathResult for single-segment calculation
+  const pathResult: import('./pathfinding').PathResult = {
+    segments: [seg],
+    nodes: [seg.start.x + '-' + seg.start.y, seg.end.x + '-' + seg.end.y],
+    entrySpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    exitSpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    transferSpillovers: 0,
+    totalTrayDistance: 0, // Will be calculated by calculateManual
+    totalDistance: 0,
+    pathName: seg.name,
+    isShortest: true,
+    percentOverShortest: 0,
+  };
+  const result = calculateManual('CT105', 'CT110', pathResult, 'fiber', 0, room10);
   expect(result).toBeTruthy();
-  expect(result!.lengthFt).toBe(20);
+  // New behavior: entry spillover (10) + exit spillover (10) + tray distance (10) = 30
+  expect(result!.lengthFt).toBe(30);
 });
 
 // Test 4: Room 10 different rows
@@ -98,11 +111,24 @@ test('Room 10 CT105 to CT110 fiber', () => {
 
 test('Room 10 CT105 to CU105 fiber', () => {
   const room10 = rooms.find(r => r.id === '10')!;
-  const paths = getAvailablePaths(room10, 'fiber');
-  const seg = paths.find(p => p.id === 'fiber-east-114')!;
-  const result = calculateManual('CT105', 'CU105', [seg], 'fiber', 0, room10);
+  const seg = room10.pathSegments.find(p => p.id === 'fiber-east-114')!;
+  // Build a minimal PathResult for single-segment calculation
+  const pathResult: import('./pathfinding').PathResult = {
+    segments: [seg],
+    nodes: [seg.start.x + '-' + seg.start.y, seg.end.x + '-' + seg.end.y],
+    entrySpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    exitSpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    transferSpillovers: 0,
+    totalTrayDistance: 0, // Will be calculated by calculateManual
+    totalDistance: 0,
+    pathName: seg.name,
+    isShortest: true,
+    percentOverShortest: 0,
+  };
+  const result = calculateManual('CT105', 'CU105', pathResult, 'fiber', 0, room10);
   expect(result).toBeTruthy();
-  expect(result!.lengthFt).toBe(48);
+  // New behavior: entry spillover (10) + exit spillover (10) + tray distance (36) + X distance (2) = 58
+  expect(result!.lengthFt).toBe(58);
 });
 
 // Test 5: Network rack adjustment
@@ -116,11 +142,24 @@ test('Room 10 CT105 to CU105 fiber', () => {
 
 test('Room 10 network rack adjustment', () => {
   const room10 = rooms.find(r => r.id === '10')!;
-  const paths = getAvailablePaths(room10, 'fiber');
-  const seg = paths.find(p => p.id === 'fiber-east-114')!;
-  const result = calculateManual('EU108:1:5', 'EU110', [seg], 'fiber', 0, room10);
+  const seg = room10.pathSegments.find(p => p.id === 'fiber-east-114')!;
+  // Build a minimal PathResult for single-segment calculation
+  const pathResult: import('./pathfinding').PathResult = {
+    segments: [seg],
+    nodes: [seg.start.x + '-' + seg.start.y, seg.end.x + '-' + seg.end.y],
+    entrySpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    exitSpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    transferSpillovers: 0,
+    totalTrayDistance: 0, // Will be calculated by calculateManual
+    totalDistance: 0,
+    pathName: seg.name,
+    isShortest: true,
+    percentOverShortest: 0,
+  };
+  const result = calculateManual('EU108:1:5', 'EU110', pathResult, 'fiber', 0, room10);
   expect(result).toBeTruthy();
-  expect(result!.lengthFt).toBe(15);
+  // New behavior: entry spillover (10) + exit spillover (10) + tray distance (4) + network rack adjustment (1) = 25
+  expect(result!.lengthFt).toBe(25);
 });
 
 // Test 6: getCabType correctly strips port info for half/quarter cabs
@@ -341,4 +380,78 @@ test('findShortestPath finds path for mid-segment cabinets FT132 to GG185', () =
   // Must include a vertical segment to bridge between y=132 and y=185
   const verticalSegIds = ['vertical-fw', 'vertical-fz', 'vertical-gd'];
   expect(result!.segments.some(s => verticalSegIds.includes(s.id))).toBe(true);
+});
+
+// Test 18: Multi-segment path calculation (FT132 to GG185)
+test('calculateManual handles multi-segment path FT132 to GG185', () => {
+  const room14 = rooms.find(r => r.id === '14')!;
+  const pathResult = findShortestPath(
+    { x: 'FT', y: 132 },
+    42,
+    { x: 'GG', y: 185 },
+    42,
+    'fiber',
+    room14
+  );
+  expect(pathResult).toBeTruthy();
+  expect(pathResult!.segments.length).toBeGreaterThan(1); // Multi-segment path
+
+  const result = calculateManual('FT132', 'GG185', pathResult!, 'fiber', 0, room14);
+  expect(result).toBeTruthy();
+  // Verify the length matches the pathfinding result (with cabinet adjustments)
+  // PathResult.totalDistance already includes spillover, so result should be close
+  expect(result!.lengthFt).toBeGreaterThan(0);
+  // The result should be pathfinding distance + cabinet adjustments (none for full cabs)
+  expect(result!.lengthFt).toBeCloseTo(pathResult!.totalDistance, 0);
+});
+
+// Test 19: Multi-segment path with 3 segments
+test('calculateManual handles 3-segment path', () => {
+  const room14 = rooms.find(r => r.id === '14')!;
+  // Find a path that uses 3 segments (horizontal + vertical + horizontal)
+  const results = findKShortestPaths(
+    { x: 'FK', y: 132 },
+    42,
+    { x: 'GM', y: 185 },
+    42,
+    'fiber',
+    room14,
+    5,
+    2.0
+  );
+  expect(results.length).toBeGreaterThan(0);
+
+  // Find a path with at least 3 segments
+  const multiSegPath = results.find(r => r.segments.length >= 3);
+  if (multiSegPath) {
+    const result = calculateManual('FK132', 'GM185', multiSegPath, 'fiber', 0, room14);
+    expect(result).toBeTruthy();
+    expect(result!.lengthFt).toBeGreaterThan(0);
+    // Verify path name reflects the multi-segment route
+    expect(result!.path).toContain(' → ');
+  }
+});
+
+// Test 20: Room without orientation field uses fallback to room ID
+test('calculateManual handles room without orientation field', () => {
+  const room10 = rooms.find(r => r.id === '10')!;
+  // Create a room without orientation field to test fallback
+  const roomWithoutOrientation = { ...room10, orientation: undefined };
+  const seg = room10.pathSegments.find(p => p.id === 'fiber-east-114')!;
+  const pathResult: import('./pathfinding').PathResult = {
+    segments: [seg],
+    nodes: [seg.start.x + '-' + seg.start.y, seg.end.x + '-' + seg.end.y],
+    entrySpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    exitSpillover: (seg.fiberHeight ?? 0) + room10.spilloverAdditionalLength,
+    transferSpillovers: 0,
+    totalTrayDistance: 0,
+    totalDistance: 0,
+    pathName: seg.name,
+    isShortest: true,
+    percentOverShortest: 0,
+  };
+  const result = calculateManual('CT105', 'CT110', pathResult, 'fiber', 0, roomWithoutOrientation);
+  expect(result).toBeTruthy();
+  // Should use room ID fallback (room 10 = numbers-horizontal) and produce correct result
+  expect(result!.lengthFt).toBe(30);
 });

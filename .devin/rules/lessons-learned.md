@@ -297,3 +297,11 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 68. Nested Error Handling for Decompression Operations
 - **Rule**: When attempting decompression as a fallback after parse failure, wrap the decompression in its own try-catch block.
 - **Guardrail**: Compression libraries like LZ-string can throw synchronous errors on malformed input, separate from the initial parse failure. A single try-catch around both operations causes the decompression error to mask the original parse error and may leave the application in an undefined state. Use nested try-catch blocks to handle each failure mode independently with appropriate logging and user feedback.
+
+### 69. Optional Type Fields Must Have Safe Defaults or Explicit Validation
+- **Rule**: When adding optional fields to types that control critical logic (e.g., calculation formulas, algorithm selection), provide safe defaults or explicit validation to prevent silent fallback to incorrect behavior.
+- **Guardrail**: If a field is optional in the type definition but used in conditional logic (e.g., `if (room.orientation === 'numbers-horizontal')`), the absence of the field will cause the condition to always be false, potentially falling through to the wrong branch. Either: (1) make the field required and validate it, (2) provide a default value during validation, or (3) add explicit fallback logic based on other available data (e.g., room ID). Never rely on optional fields being present for critical control flow without defensive handling.
+
+### 70. Use Explicit Structural Checks Instead of Derived Values for State Detection
+- **Rule**: When detecting the state or type of an object (e.g., single-segment vs multi-segment path), use explicit structural checks (e.g., array length) rather than derived values (e.g., calculated distance).
+- **Guardrail**: Using derived values like `totalTrayDistance > 0` to detect object state is fragile because the derived value depends on calculation logic that may change or have edge cases. A single-segment path could theoretically have non-zero distance, and a multi-segment path could theoretically have zero distance. Use explicit structural properties like `segments.length > 1` to detect state, as these are invariant to calculation changes and clearly reflect the object's actual structure.
