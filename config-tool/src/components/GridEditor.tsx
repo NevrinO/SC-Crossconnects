@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Room, GridPoint, PathSegment } from '../types/editor'
+import { Room, GridPoint, PathSegment, Cabinet } from '../types/editor'
 import { calculateGridBounds, compareXLabels } from '../lib/grid-utils'
 import { SegmentForm } from './SegmentForm'
 import { showSuccess, showError } from '../lib/toast'
@@ -9,10 +9,13 @@ interface GridEditorProps {
   onSegmentCreate?: (segment: PathSegment) => void
   onSegmentSelect?: (segmentId: string | null) => void
   onSegmentDelete?: (segmentId: string) => void
+  onCabinetChange?: (cabinets: Cabinet[]) => void
+  onUndo?: (room: Room) => void
+  onRedo?: (room: Room) => void
   selectedSegmentId?: string | null
 }
 
-export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDelete, selectedSegmentId }: GridEditorProps) {
+export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDelete, onCabinetChange, onUndo, onRedo, selectedSegmentId }: GridEditorProps) {
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -33,6 +36,10 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
   const [measurementMode, setMeasurementMode] = useState(false)
   const [measurementPoints, setMeasurementPoints] = useState<GridPoint[]>([])
   const [measurementFinished, setMeasurementFinished] = useState(false)
+  const [cabinetPlacementMode, setCabinetPlacementMode] = useState(false)
+  const [cabinetPopover, setCabinetPopover] = useState<{ x: number; y: number; point: GridPoint } | null>(null)
+  const [undoStack, setUndoStack] = useState<Room[]>([])
+  const [redoStack, setRedoStack] = useState<Room[]>([])
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const measurementTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -178,6 +185,12 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
       // Clicked on grid margin/labels — start pan
       setIsDragging(true)
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+      return
+    }
+
+    // Cabinet placement mode: click to add/remove cabinets
+    if (cabinetPlacementMode) {
+      handleCabinetClick(gridPoint, e.clientX, e.clientY)
       return
     }
 
@@ -354,6 +367,7 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
       handleCancelSegment()
       setContextMenu(null)
       clearMeasurement()
+      setCabinetPopover(null)
       return
     }
 
@@ -404,6 +418,25 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
       // Trigger manual save - this will be handled by parent component
       window.dispatchEvent(new CustomEvent('manual-save'))
       showSuccess('Saved')
+      return
+    }
+
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      if (e.shiftKey) {
+        handleRedo()
+        showSuccess('Redo')
+      } else {
+        handleUndo()
+        showSuccess('Undo')
+      }
+      return
+    }
+
+    if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      handleRedo()
+      showSuccess('Redo')
       return
     }
 
@@ -459,6 +492,95 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
   const handleReset = () => {
     setZoom(1)
     setPan({ x: 0, y: 0 })
+  }
+
+  // Cabinet helpers
+  const getCabinetAtPoint = (point: GridPoint): Cabinet | null => {
+    const cabinets = room.cabinets || []
+    return cabinets.find(c => c.x === point.x && c.y === point.y) || null
+  }
+
+  const getCabinetColor = (type: Cabinet['type']): { fill: string; stroke: string } => {
+    switch (type) {
+      case 'full_cab':
+        return { fill: '#f3f4f6', stroke: '#9ca3af' }
+      case 'network_rack':
+        return { fill: '#dbeafe', stroke: '#2563eb' }
+      case 'half_cab':
+        return { fill: '#fef3c7', stroke: '#d97706' }
+      case 'quarter_cab':
+        return { fill: '#d1fae5', stroke: '#059669' }
+    }
+  }
+
+  const handleCabinetClick = (point: GridPoint, clientX: number, clientY: number) => {
+    const existing = getCabinetAtPoint(point)
+    if (existing) {
+      // Show popover to change type or remove
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setCabinetPopover({
+          x: clientX - rect.left + containerRef.current.scrollLeft,
+          y: clientY - rect.top + containerRef.current.scrollTop,
+          point
+        })
+      }
+    } else {
+      // Push current state to undo stack before adding cabinet
+      setUndoStack(prev => [...prev.slice(-49), JSON.parse(JSON.stringify(room))])
+      setRedoStack([])
+
+      // Add new full_cab
+      const newCabinet: Cabinet = {
+        id: `${point.x}${point.y}`,
+        x: point.x,
+        y: point.y,
+        type: 'full_cab'
+      }
+      const updatedCabinets = [...(room.cabinets || []), newCabinet]
+      if (onCabinetChange) {
+        onCabinetChange(updatedCabinets)
+      }
+    }
+  }
+
+  const handleCabinetTypeChange = (point: GridPoint, newType: Cabinet['type'] | 'remove') => {
+    // Push current state to undo stack before making changes
+    setUndoStack(prev => [...prev.slice(-49), JSON.parse(JSON.stringify(room))])
+    setRedoStack([])
+
+    const cabinets = room.cabinets || []
+    const existing = getCabinetAtPoint(point)
+    if (existing) {
+      if (newType === 'remove') {
+        const updated = cabinets.filter(c => !(c.x === point.x && c.y === point.y))
+        if (onCabinetChange) onCabinetChange(updated)
+      } else {
+        const updated = cabinets.map(c =>
+          c.x === point.x && c.y === point.y ? { ...c, type: newType } : c
+        )
+        if (onCabinetChange) onCabinetChange(updated)
+      }
+    }
+    setCabinetPopover(null)
+  }
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return
+    const previous = undoStack[undoStack.length - 1]
+    setUndoStack(prev => prev.slice(0, -1))
+    setRedoStack(prev => [...prev, JSON.parse(JSON.stringify(room))])
+    // Trigger parent to restore the room state
+    if (onUndo) onUndo(previous)
+  }
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return
+    const next = redoStack[redoStack.length - 1]
+    setRedoStack(prev => prev.slice(0, -1))
+    setUndoStack(prev => [...prev, JSON.parse(JSON.stringify(room))])
+    // Trigger parent to restore the room state
+    if (onRedo) onRedo(next)
   }
 
   const handleExportImage = () => {
@@ -549,6 +671,22 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
           <p className="text-xs text-gray-500 mt-0.5">Click start → click end: draw segment &nbsp;•&nbsp; Right-click drag: pan &nbsp;•&nbsp; Shift+Right-click: context menu &nbsp;•&nbsp; Scroll or +/− to zoom &nbsp;•&nbsp; WASD/Arrows: pan &nbsp;•&nbsp; Esc to cancel</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            className="px-2 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Undo (Ctrl+Z)"
+          >
+            ↶ Undo
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+            className="px-2 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+          >
+            ↷ Redo
+          </button>
           <select
             value={layerFilter}
             onChange={(e) => setLayerFilter(e.target.value as any)}
@@ -605,6 +743,13 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
           >
             📏 Measure
           </button>
+          <button
+            onClick={() => setCabinetPlacementMode(!cabinetPlacementMode)}
+            className={`px-3 py-1 rounded text-sm ml-2 ${cabinetPlacementMode ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+            title="Cabinet placement mode"
+          >
+            🗄️ Cabinets
+          </button>
           {measurementMode && measurementPoints.length >= 2 && (
             <button
               onClick={() => {
@@ -649,18 +794,51 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
             {/* Grid cells */}
             {yAxisLabels.map((_y, yIndex) => (
               <g key={yIndex}>
-                {xAxisLabels.map((_x, xIndex) => (
-                  <rect
-                    key={`${xIndex}-${yIndex}`}
-                    x={(xIndex + 1) * cellSize}
-                    y={(yAxisCount - yIndex) * cellSize}
-                    width={cellSize}
-                    height={cellSize}
-                    fill="white"
-                    stroke="#e5e7eb"
-                    strokeWidth={1}
-                  />
-                ))}
+                {xAxisLabels.map((_x, xIndex) => {
+                  // Map display position (xIndex, yIndex) to actual GridPoint coordinates
+                  // GridPoint is always { x: string (letter), y: number } regardless of orientation
+                  // Orientation only affects which axis displays letters vs numbers
+                  let gridX: string, gridY: number
+                  if (isHorizontalNumbers) {
+                    // X axis displays numbers, Y axis displays letters
+                    // So xIndex maps to bounds.yLabels (numbers), yIndex maps to bounds.xLabels (letters)
+                    gridX = bounds.xLabels[yIndex]
+                    gridY = bounds.yLabels[xIndex]
+                  } else {
+                    // X axis displays letters, Y axis displays numbers
+                    // So xIndex maps to bounds.xLabels (letters), yIndex maps to bounds.yLabels (numbers)
+                    gridX = bounds.xLabels[xIndex]
+                    gridY = bounds.yLabels[yIndex]
+                  }
+                  const cabinet = getCabinetAtPoint({ x: gridX, y: gridY })
+                  const colors = cabinet ? getCabinetColor(cabinet.type) : null
+
+                  return (
+                    <g key={`${xIndex}-${yIndex}`}>
+                      <rect
+                        x={(xIndex + 1) * cellSize}
+                        y={(yAxisCount - yIndex) * cellSize}
+                        width={cellSize}
+                        height={cellSize}
+                        fill={colors?.fill || 'white'}
+                        stroke={colors?.stroke || '#e5e7eb'}
+                        strokeWidth={cabinet ? 2 : 1}
+                      />
+                      {cabinet && cabinetPlacementMode && colors && (
+                        <rect
+                          x={(xIndex + 1) * cellSize + 4 * zoom}
+                          y={(yAxisCount - yIndex) * cellSize + 4 * zoom}
+                          width={cellSize - 8 * zoom}
+                          height={cellSize - 8 * zoom}
+                          fill="none"
+                          stroke={colors.stroke}
+                          strokeWidth={2 * zoom}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )}
+                    </g>
+                  )
+                })}
               </g>
             ))}
 
@@ -1200,6 +1378,57 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
           >
             🗑️ Delete
+          </button>
+        </div>
+      )}
+
+      {/* Cabinet Type Popover */}
+      {cabinetPopover && (
+        <div
+          className="absolute bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+          style={{
+            left: cabinetPopover.x,
+            top: cabinetPopover.y,
+          }}
+          onClick={() => setCabinetPopover(null)}
+        >
+          <div className="px-3 py-1 text-xs text-gray-500 border-b border-gray-100 mb-1">
+            {cabinetPopover.point.x}{cabinetPopover.point.y}
+          </div>
+          <button
+            onClick={() => handleCabinetTypeChange(cabinetPopover.point, 'full_cab')}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+          >
+            <span className="w-4 h-4 bg-gray-100 border border-gray-400 rounded"></span>
+            Full Cabinet
+          </button>
+          <button
+            onClick={() => handleCabinetTypeChange(cabinetPopover.point, 'network_rack')}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+          >
+            <span className="w-4 h-4 bg-blue-100 border border-blue-600 rounded"></span>
+            Network Rack
+          </button>
+          <button
+            onClick={() => handleCabinetTypeChange(cabinetPopover.point, 'half_cab')}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+          >
+            <span className="w-4 h-4 bg-amber-100 border border-amber-600 rounded"></span>
+            Half Cab
+          </button>
+          <button
+            onClick={() => handleCabinetTypeChange(cabinetPopover.point, 'quarter_cab')}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+          >
+            <span className="w-4 h-4 bg-green-100 border border-green-600 rounded"></span>
+            Quarter Cab
+          </button>
+          <div className="border-t border-gray-100 my-1"></div>
+          <button
+            onClick={() => handleCabinetTypeChange(cabinetPopover.point, 'remove')}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
+          >
+            🗑️ Remove
           </button>
         </div>
       )}

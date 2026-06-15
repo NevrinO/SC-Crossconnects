@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Room, SpecialCabinets } from '../types/editor'
-import { expandCabinetRange, validateCabinetBounds } from '../lib/cabinet-utils'
+import { Room, SpecialCabinets, Cabinet } from '../types/editor'
+import { expandCabinetRange, validateCabinetBounds, parseCabinetCoordinate } from '../lib/cabinet-utils'
 
 interface SpecialCabinetEditorProps {
   room: Room
   onUpdate: (specialCabinets: SpecialCabinets) => void
+  onCabinetImport?: (cabinets: Cabinet[]) => void
 }
 
-export function SpecialCabinetEditor({ room, onUpdate }: SpecialCabinetEditorProps) {
+export function SpecialCabinetEditor({ room, onUpdate, onCabinetImport }: SpecialCabinetEditorProps) {
   const [networkRacksText, setNetworkRacksText] = useState(
     room.specialCabinets.networkRacks.join('\n')
   )
@@ -62,6 +63,70 @@ export function SpecialCabinetEditor({ room, onUpdate }: SpecialCabinetEditorPro
     setHalfCabsText(room.specialCabinets.halfCabs.join('\n'))
     setQuarterCabsText(room.specialCabinets.quarterCabs.join('\n'))
     setErrors({})
+  }
+
+  const handleImportToGrid = () => {
+    const newErrors: Record<string, string[]> = {}
+
+    const networkErrors = validateCabinets(networkRacksText)
+    const halfErrors = validateCabinets(halfCabsText)
+    const quarterErrors = validateCabinets(quarterCabsText)
+
+    if (networkErrors.length > 0) newErrors.networkRacks = networkErrors
+    if (halfErrors.length > 0) newErrors.halfCabs = halfErrors
+    if (quarterErrors.length > 0) newErrors.quarterCabs = quarterErrors
+
+    setErrors(newErrors)
+
+    if (Object.keys(newErrors).length === 0) {
+      const networkRacks = expandCabinetRange(networkRacksText, room.coordinateFormat)
+      const halfCabs = expandCabinetRange(halfCabsText, room.coordinateFormat)
+      const quarterCabs = expandCabinetRange(quarterCabsText, room.coordinateFormat)
+
+      // Convert to Cabinet array
+      const cabinets: Cabinet[] = []
+
+      for (const id of networkRacks) {
+        const parsed = parseCabinetCoordinate(id, room.coordinateFormat)
+        if (!parsed) {
+          newErrors.networkRacks = [`Invalid cabinet format: ${id}`]
+          setErrors(newErrors)
+          return
+        }
+        cabinets.push({ id, x: parsed.prefix, y: parsed.number, type: 'network_rack' })
+      }
+
+      for (const id of halfCabs) {
+        const parsed = parseCabinetCoordinate(id, room.coordinateFormat)
+        if (!parsed) {
+          newErrors.halfCabs = [`Invalid cabinet format: ${id}`]
+          setErrors(newErrors)
+          return
+        }
+        cabinets.push({ id, x: parsed.prefix, y: parsed.number, type: 'half_cab' })
+      }
+
+      for (const id of quarterCabs) {
+        const parsed = parseCabinetCoordinate(id, room.coordinateFormat)
+        if (!parsed) {
+          newErrors.quarterCabs = [`Invalid cabinet format: ${id}`]
+          setErrors(newErrors)
+          return
+        }
+        cabinets.push({ id, x: parsed.prefix, y: parsed.number, type: 'quarter_cab' })
+      }
+
+      if (onCabinetImport) {
+        onCabinetImport(cabinets)
+      }
+
+      // Also update specialCabinets
+      onUpdate({
+        networkRacks,
+        halfCabs,
+        quarterCabs
+      })
+    }
   }
 
   const totalCount = room.specialCabinets.networkRacks.length
@@ -181,6 +246,12 @@ export function SpecialCabinetEditor({ room, onUpdate }: SpecialCabinetEditorPro
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Apply Changes
+          </button>
+          <button
+            onClick={handleImportToGrid}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            Import to Grid
           </button>
           <button
             onClick={handleCancel}
