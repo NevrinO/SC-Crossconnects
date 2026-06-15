@@ -6,6 +6,8 @@ interface RoomMapContainerProps {
   room: Room
   startCabinet?: string
   endCabinet?: string
+  selectedPathSegments?: import('../types/room').PathSegment[]
+  cableType?: 'fiber' | 'copper' | null
   onSelectStart: (cabinetId: string) => void
   onSelectEnd: (cabinetId: string) => void
   children: (props: {
@@ -13,6 +15,13 @@ interface RoomMapContainerProps {
     cellSize: number
     orientation: 'numbers-vertical' | 'numbers-horizontal'
     startCorner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    selectedPathSegments?: import('../types/room').PathSegment[]
+    cableType?: 'fiber' | 'copper' | null
+    startCabinet?: string
+    endCabinet?: string
+    highlightedCabinet?: string | null
+    onCabinetClick: (cabinetId: string) => void
+    onJumpToCabinet: (cabinetId: string) => void
   }) => ReactNode
 }
 
@@ -22,6 +31,8 @@ export function RoomMapContainer({
   room,
   startCabinet,
   endCabinet,
+  selectedPathSegments,
+  cableType,
   onSelectStart,
   onSelectEnd,
   children,
@@ -31,6 +42,7 @@ export function RoomMapContainer({
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [clickState, setClickState] = useState<ClickState>('idle')
+  const [highlightedCabinet, setHighlightedCabinet] = useState<string | null>(null)
   
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -97,19 +109,55 @@ export function RoomMapContainer({
     }
   }
 
-  // Convert grid coordinates to cabinet ID
-  const gridToCabinetId = (point: GridPoint): string => {
-    if (room.coordinateFormat === 'numbers-first') {
-      return `${point.y}${point.x}`
-    }
-    return `${point.x}${point.y}`
-  }
-
   const handleZoomIn = () => setZoom(z => Math.min(maxZoom, parseFloat((z + 0.1).toFixed(1))))
   const handleZoomOut = () => setZoom(z => Math.max(minZoom, parseFloat((z - 0.1).toFixed(1))))
   const handleResetZoom = () => {
     setZoom(1)
     setPan({ x: 0, y: 0 })
+  }
+
+  // Feature 5: Cabinet search/jump functionality
+  const handleJumpToCabinet = (cabinetId: string): boolean => {
+    const cabinet = room.cabinets?.find(c => c.id === cabinetId)
+    if (!cabinet) return false
+
+    // Calculate screen position of the cabinet
+    let xIndex: number
+    let yIndex: number
+
+    if (isHorizontalNumbers) {
+      xIndex = bounds.yLabels.indexOf(cabinet.y)
+      yIndex = bounds.xLabels.indexOf(cabinet.x)
+    } else {
+      xIndex = bounds.xLabels.indexOf(cabinet.x)
+      yIndex = bounds.yLabels.indexOf(cabinet.y)
+    }
+
+    if (xIndex === -1 || yIndex === -1) return false
+
+    const cabinetScreenX = (xIndex + 1) * cellSize + cellSize / 2
+    const cabinetScreenY = (yAxisCount - yIndex) * cellSize + cellSize / 2
+
+    // Calculate pan to center the cabinet
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+
+      setPan({
+        x: centerX - cabinetScreenX,
+        y: centerY - cabinetScreenY,
+      })
+
+      // Set zoom to a reasonable level for viewing
+      setZoom(1.5)
+
+      // Brief highlight
+      setHighlightedCabinet(cabinetId)
+      setTimeout(() => setHighlightedCabinet(null), 2000)
+      return true
+    }
+    return false
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -180,32 +228,10 @@ export function RoomMapContainer({
       return
     }
 
-    const cabinetId = gridToCabinetId(gridPoint)
-
-    // Amendment 8: Map click interaction rules
-    if (clickState === 'idle') {
-      // First click → sets Start
-      onSelectStart(cabinetId)
-      onSelectEnd('')
-    } else if (clickState === 'waiting-for-end') {
-      if (cabinetId === startCabinet) {
-        // Click the start cabinet again → clear start
-        onSelectStart('')
-        onSelectEnd('')
-      } else {
-        // Second click → sets End
-        onSelectEnd(cabinetId)
-      }
-    } else if (clickState === 'both-selected') {
-      if (cabinetId === endCabinet) {
-        // Click the End cabinet again → unsets End
-        onSelectEnd('')
-      } else if (cabinetId !== startCabinet) {
-        // Click a third cabinet (neither start nor end) → clear both, set as new Start
-        onSelectStart(cabinetId)
-        onSelectEnd('')
-      }
-    }
+    // Cabinet clicks are now handled by the CabinetLayer via onCabinetClick callback
+    // Only start pan if clicking on non-cabinet areas
+    setIsDragging(true)
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -277,6 +303,38 @@ export function RoomMapContainer({
               cellSize,
               orientation,
               startCorner,
+              selectedPathSegments,
+              cableType,
+              startCabinet,
+              endCabinet,
+              highlightedCabinet,
+              onCabinetClick: (cabinetId: string) => {
+                // Amendment 8: Map click interaction rules
+                if (clickState === 'idle') {
+                  // First click → sets Start
+                  onSelectStart(cabinetId)
+                  onSelectEnd('')
+                } else if (clickState === 'waiting-for-end') {
+                  if (cabinetId === startCabinet) {
+                    // Click the start cabinet again → clear start
+                    onSelectStart('')
+                    onSelectEnd('')
+                  } else {
+                    // Second click → sets End
+                    onSelectEnd(cabinetId)
+                  }
+                } else if (clickState === 'both-selected') {
+                  if (cabinetId === endCabinet) {
+                    // Click the End cabinet again → unsets End
+                    onSelectEnd('')
+                  } else if (cabinetId !== startCabinet) {
+                    // Click a third cabinet (neither start nor end) → clear both, set as new Start
+                    onSelectStart(cabinetId)
+                    onSelectEnd('')
+                  }
+                }
+              },
+              onJumpToCabinet: handleJumpToCabinet,
             })}
           </g>
         </svg>

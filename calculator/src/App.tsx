@@ -17,6 +17,9 @@ import CsvImport from './components/CsvImport';
 import SessionsPanel from './components/SessionsPanel';
 import { RoomMapContainer } from './components/RoomMapContainer';
 import { GridLayer } from './components/GridLayer';
+import { CabinetLayer } from './components/CabinetLayer';
+import { SegmentLayer } from './components/SegmentLayer';
+import { MapControls } from './components/MapControls';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -171,19 +174,34 @@ export default function App() {
               }}
             />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-start">
               <CabinetInput
                 label="Starting Rack"
                 value={startCabinet}
                 onChange={setStartCabinet}
                 room={selectedRoom}
               />
-              <CabinetInput
-                label="Ending Rack"
-                value={endCabinet}
-                onChange={setEndCabinet}
-                room={selectedRoom}
-              />
+              <div className="flex items-start gap-2">
+                <CabinetInput
+                  label="Ending Rack"
+                  value={endCabinet}
+                  onChange={setEndCabinet}
+                  room={selectedRoom}
+                />
+                {/* Feature 1: Swap start/end button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const temp = startCabinet
+                    setStartCabinet(endCabinet)
+                    setEndCabinet(temp)
+                  }}
+                  className="mt-6 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                  title="Swap Start and End (X)"
+                >
+                  ⇄
+                </button>
+              </div>
             </div>
 
             <CableTypeSelector
@@ -260,15 +278,38 @@ export default function App() {
             room={selectedRoom}
             startCabinet={startCabinet}
             endCabinet={endCabinet}
+            selectedPathSegments={selectedPath?.segments}
+            cableType={cableType}
             onSelectStart={setStartCabinet}
             onSelectEnd={setEndCabinet}
           >
-            {({ bounds, cellSize, orientation }) => (
-              <GridLayer
-                bounds={bounds}
-                cellSize={cellSize}
-                orientation={orientation}
-              />
+            {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, onJumpToCabinet }) => (
+              <>
+                <MapControls onJumpToCabinet={onJumpToCabinet} />
+                <GridLayer
+                  bounds={bounds}
+                  cellSize={cellSize}
+                  orientation={orientation}
+                />
+                <SegmentLayer
+                  bounds={bounds}
+                  cellSize={cellSize}
+                  orientation={orientation}
+                  segments={selectedRoom.pathSegments}
+                  selectedPathSegments={selectedPathSegments}
+                  cableType={cableType}
+                />
+                <CabinetLayer
+                  bounds={bounds}
+                  cellSize={cellSize}
+                  orientation={orientation}
+                  cabinets={selectedRoom.cabinets || []}
+                  startCabinet={startCabinet}
+                  endCabinet={endCabinet}
+                  highlightedCabinet={highlightedCabinet}
+                  onCabinetClick={onCabinetClick}
+                />
+              </>
             )}
           </RoomMapContainer>
         </div>

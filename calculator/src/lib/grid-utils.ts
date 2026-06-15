@@ -1,4 +1,4 @@
-import { Room, CoordinateFormat } from '../types/room'
+import { Room, CoordinateFormat, GridPoint } from '../types/room'
 
 export interface GridBounds {
   minX: string
@@ -215,5 +215,71 @@ export function formatCoordinate(x: string, y: number, format: CoordinateFormat)
     return `${x}${y}`
   } else {
     return `${y}${x}`
+  }
+}
+
+/**
+ * Convert a grid point to screen coordinates based on grid bounds and orientation
+ * Returns null if the point is not within the grid bounds
+ */
+export function gridToScreen(
+  point: GridPoint,
+  bounds: GridBounds,
+  cellSize: number,
+  orientation: 'numbers-vertical' | 'numbers-horizontal'
+): { x: number; y: number } | null {
+  const isHorizontalNumbers = orientation === 'numbers-horizontal'
+  const yAxisCount = isHorizontalNumbers ? bounds.xLabels.length : bounds.yLabels.length
+
+  let xIndex: number
+  let yIndex: number
+
+  if (isHorizontalNumbers) {
+    // X axis = numbers, Y axis = letters
+    xIndex = bounds.yLabels.indexOf(point.y)
+    yIndex = bounds.xLabels.indexOf(point.x)
+  } else {
+    xIndex = bounds.xLabels.indexOf(point.x)
+    yIndex = bounds.yLabels.indexOf(point.y)
+  }
+
+  if (xIndex === -1 || yIndex === -1) return null
+
+  return {
+    x: (xIndex + 1) * cellSize,
+    y: (yAxisCount - yIndex) * cellSize,
+  }
+}
+
+/**
+ * Convert a grid point to screen coordinates for segment center points
+ * Returns null if the point is not within the grid bounds
+ */
+export function gridToScreenCenter(
+  point: GridPoint,
+  bounds: GridBounds,
+  cellSize: number,
+  orientation: 'numbers-vertical' | 'numbers-horizontal'
+): { x: number; y: number } | null {
+  const isHorizontalNumbers = orientation === 'numbers-horizontal'
+  const yAxisCount = isHorizontalNumbers ? bounds.xLabels.length : bounds.yLabels.length
+
+  let xIndex: number
+  let yIndex: number
+
+  if (isHorizontalNumbers) {
+    // X axis = numbers, Y axis = letters
+    xIndex = bounds.yLabels.indexOf(point.y)
+    yIndex = bounds.xLabels.indexOf(point.x)
+  } else {
+    xIndex = bounds.xLabels.indexOf(point.x)
+    yIndex = bounds.yLabels.indexOf(point.y)
+  }
+
+  if (xIndex === -1 || yIndex === -1) return null
+
+  return {
+    x: (xIndex + 1) * cellSize + cellSize / 2,
+    y: (yAxisCount - yIndex) * cellSize + cellSize / 2,
   }
 }
