@@ -62,6 +62,7 @@ export function RoomMapContainer({
   const [showSegments, setShowSegments] = useState(true)
   const [showAnimation, setShowAnimation] = useState(true)
   const [showPathTooltips, setShowPathTooltips] = useState(false)
+  const [controlsOpen, setControlsOpen] = useState(true)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -86,20 +87,32 @@ export function RoomMapContainer({
   const xAxisCount = xAxisLabels.length
   const yAxisCount = yAxisLabels.length
 
-  // Calculate initial pan position based on startCorner
+  // Helper: clamp pan so the grid never leaves the container viewport.
+  // When grid fits: clamp to [0, container - grid] (keep it fully inside).
+  // When grid is larger: clamp to [container - grid, 0] (don't let it scroll past edges).
+  const clampPan = (px: number, py: number, cw: number, ch: number, gw: number, gh: number) => {
+    const maxX = cw - gw
+    const maxY = ch - gh
+    return {
+      x: maxX < 0 ? Math.max(maxX, Math.min(0, px)) : Math.max(0, Math.min(maxX, px)),
+      y: maxY < 0 ? Math.max(maxY, Math.min(0, py)) : Math.max(0, Math.min(maxY, py)),
+    }
+  }
+
+  // Calculate initial pan position based on startCorner — only on room/corner change, NOT zoom
   useEffect(() => {
     if (!containerRef.current) return
     const containerWidth = containerRef.current.clientWidth
     const containerHeight = containerRef.current.clientHeight
 
-    // Calculate grid dimensions
-    const gridWidth = (xAxisCount + 2) * cellSize
-    const gridHeight = (yAxisCount + 2) * cellSize
+    // Use base cellSize (zoom=1) for initial positioning so zoom doesn't reset pan
+    const baseCellSize = 40
+    const gridWidth = (xAxisCount + 2) * baseCellSize
+    const gridHeight = (yAxisCount + 2) * baseCellSize
 
     let initialX = 0
     let initialY = 0
 
-    // Adjust pan based on startCorner to show the appropriate part of the grid
     switch (startCorner) {
       case 'top-right':
         initialX = containerWidth - gridWidth
@@ -117,14 +130,8 @@ export function RoomMapContainer({
         initialY = 0
     }
 
-    // Constrain to valid pan bounds
-    const maxX = containerWidth - gridWidth
-    const maxY = containerHeight - gridHeight
-    initialX = Math.max(maxX, Math.min(0, initialX))
-    initialY = Math.max(maxY, Math.min(0, initialY))
-
-    setPan({ x: initialX, y: initialY })
-  }, [room, startCorner, xAxisCount, yAxisCount, cellSize])
+    setPan(clampPan(initialX, initialY, containerWidth, containerHeight, gridWidth, gridHeight))
+  }, [room, startCorner, xAxisCount, yAxisCount])
 
   // Calculate grid dimensions for SVG viewBox
   const gridWidth = (xAxisCount + 2) * cellSize
@@ -187,7 +194,9 @@ export function RoomMapContainer({
     const cabinet = room.cabinets?.find(c => c.id === cabinetId)
     if (!cabinet) return false
 
-    // Calculate screen position of the cabinet
+    // Calculate screen position of the cabinet using target zoom
+    const targetZoom = 1.5
+    const targetCellSize = 40 * targetZoom
     let xIndex: number
     let yIndex: number
 
@@ -201,8 +210,8 @@ export function RoomMapContainer({
 
     if (xIndex === -1 || yIndex === -1) return false
 
-    const cabinetScreenX = (xIndex + 1) * cellSize + cellSize / 2
-    const cabinetScreenY = (yAxisCount - yIndex) * cellSize + cellSize / 2
+    const cabinetScreenX = (xIndex + 1) * targetCellSize + targetCellSize / 2
+    const cabinetScreenY = (yAxisCount - yIndex) * targetCellSize + targetCellSize / 2
 
     // Calculate pan to center the cabinet
     if (containerRef.current) {
@@ -210,13 +219,18 @@ export function RoomMapContainer({
       const centerX = rect.width / 2
       const centerY = rect.height / 2
 
-      setPan({
-        x: centerX - cabinetScreenX,
-        y: centerY - cabinetScreenY,
-      })
+      const newPan = clampPan(
+        centerX - cabinetScreenX,
+        centerY - cabinetScreenY,
+        rect.width,
+        rect.height,
+        (xAxisCount + 2) * targetCellSize,
+        (yAxisCount + 2) * targetCellSize
+      )
 
-      // Set zoom to a reasonable level for viewing
-      setZoom(1.5)
+      // Set zoom first so pan is consistent
+      setZoom(targetZoom)
+      setPan(newPan)
 
       // Brief highlight
       setHighlightedCabinet(cabinetId)
@@ -227,10 +241,19 @@ export function RoomMapContainer({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Focus guard: only fire shortcuts when container has focus (not in INPUT/TEXTAREA/SELECT)
+    // Focus guard: block shortcuts when typing in inputs
     const target = e.target as HTMLElement
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
       return
+    }
+
+    // For single-letter shortcuts, require the container itself to have focus
+    // so we don't intercept typing in buttons, links, or other interactive children
+    if (/^[a-zA-Z0-9]$/.test(e.key)) {
+      const active = document.activeElement
+      if (active && active !== containerRef.current && active !== document.body) {
+        return
+      }
     }
 
     // Feature 3: Keyboard shortcuts for map interaction
@@ -288,25 +311,41 @@ export function RoomMapContainer({
 
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
       e.preventDefault()
-      setPan(p => ({ ...p, y: Math.min(0, p.y + 50) }))
+      setPan(p => {
+        const cw = containerRef.current?.clientWidth ?? 0
+        const ch = containerRef.current?.clientHeight ?? 0
+        return clampPan(p.x, p.y + 50, cw, ch, gridWidth, gridHeight)
+      })
       return
     }
 
     if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
       e.preventDefault()
-      setPan(p => ({ ...p, y: Math.max(containerRef.current?.clientHeight ?? 0 - gridHeight, p.y - 50) }))
+      setPan(p => {
+        const cw = containerRef.current?.clientWidth ?? 0
+        const ch = containerRef.current?.clientHeight ?? 0
+        return clampPan(p.x, p.y - 50, cw, ch, gridWidth, gridHeight)
+      })
       return
     }
 
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
       e.preventDefault()
-      setPan(p => ({ ...p, x: Math.min(0, p.x + 50) }))
+      setPan(p => {
+        const cw = containerRef.current?.clientWidth ?? 0
+        const ch = containerRef.current?.clientHeight ?? 0
+        return clampPan(p.x + 50, p.y, cw, ch, gridWidth, gridHeight)
+      })
       return
     }
 
     if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
       e.preventDefault()
-      setPan(p => ({ ...p, x: Math.max(containerRef.current?.clientWidth ?? 0 - gridWidth, p.x - 50) }))
+      setPan(p => {
+        const cw = containerRef.current?.clientWidth ?? 0
+        const ch = containerRef.current?.clientHeight ?? 0
+        return clampPan(p.x - 50, p.y, cw, ch, gridWidth, gridHeight)
+      })
       return
     }
 
@@ -348,12 +387,9 @@ export function RoomMapContainer({
     if (isDragging) {
       const newX = e.clientX - dragStart.x
       const newY = e.clientY - dragStart.y
-      const maxX = (containerRef.current?.clientWidth ?? 0) - gridWidth
-      const maxY = (containerRef.current?.clientHeight ?? 0) - gridHeight
-      setPan({
-        x: Math.max(maxX, Math.min(0, newX)),
-        y: Math.max(maxY, Math.min(0, newY))
-      })
+      const cw = containerRef.current?.clientWidth ?? 0
+      const ch = containerRef.current?.clientHeight ?? 0
+      setPan(clampPan(newX, newY, cw, ch, gridWidth, gridHeight))
     }
   }
 
@@ -478,20 +514,32 @@ export function RoomMapContainer({
             })}
           </g>
         </svg>
-        <div className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded shadow">
-          <MapControls
-            onJumpToCabinet={handleJumpToCabinet}
-            onToggleGrid={() => setShowGrid(!showGrid)}
-            onToggleCabinets={() => setShowCabinets(!showCabinets)}
-            onToggleSegments={() => setShowSegments(!showSegments)}
-            onToggleAnimation={() => setShowAnimation(!showAnimation)}
-            onTogglePathTooltips={() => setShowPathTooltips(!showPathTooltips)}
-            showGrid={showGrid}
-            showCabinets={showCabinets}
-            showSegments={showSegments}
-            showAnimation={showAnimation}
-            showPathTooltips={showPathTooltips}
-          />
+        <div className="absolute top-2 right-2 z-10">
+          <button
+            type="button"
+            onClick={() => setControlsOpen(!controlsOpen)}
+            className="mb-1 ml-auto block rounded bg-white/90 backdrop-blur-sm px-2 py-1 text-xs font-semibold text-gray-600 shadow hover:bg-white"
+            title={controlsOpen ? 'Hide legend' : 'Show legend'}
+          >
+            {controlsOpen ? '✕' : 'Legend'}
+          </button>
+          {controlsOpen && (
+            <div className="bg-white/90 backdrop-blur-sm p-2 rounded shadow">
+              <MapControls
+                onJumpToCabinet={handleJumpToCabinet}
+                onToggleGrid={() => setShowGrid(!showGrid)}
+                onToggleCabinets={() => setShowCabinets(!showCabinets)}
+                onToggleSegments={() => setShowSegments(!showSegments)}
+                onToggleAnimation={() => setShowAnimation(!showAnimation)}
+                onTogglePathTooltips={() => setShowPathTooltips(!showPathTooltips)}
+                showGrid={showGrid}
+                showCabinets={showCabinets}
+                showSegments={showSegments}
+                showAnimation={showAnimation}
+                showPathTooltips={showPathTooltips}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

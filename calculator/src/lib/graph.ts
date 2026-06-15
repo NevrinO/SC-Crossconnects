@@ -101,6 +101,9 @@ export class PathGraph {
     const horizontalSegments = segments.filter(s => s.start.y === s.end.y);
     const verticalSegments = segments.filter(s => s.start.x === s.end.x);
 
+    // Track intersection nodes per segment for later connectivity
+    const segmentIntersections = new Map<string, string[]>();
+
     for (const hSeg of horizontalSegments) {
       for (const vSeg of verticalSegments) {
         // Check if vertical segment's X is within horizontal segment's X range
@@ -124,6 +127,17 @@ export class PathGraph {
           if (!this.nodes.has(intersectionNodeId)) {
             this.nodes.set(intersectionNodeId, { id: intersectionNodeId, point: intersectionPoint });
           }
+
+          // Track this intersection for both segments
+          if (!segmentIntersections.has(hSeg.id)) {
+            segmentIntersections.set(hSeg.id, []);
+          }
+          segmentIntersections.get(hSeg.id)!.push(intersectionNodeId);
+
+          if (!segmentIntersections.has(vSeg.id)) {
+            segmentIntersections.set(vSeg.id, []);
+          }
+          segmentIntersections.get(vSeg.id)!.push(intersectionNodeId);
 
           // Connect horizontal segment to intersection
           const hStartNodeId = nodeId(hSeg.start);
@@ -211,6 +225,76 @@ export class PathGraph {
             weight: vWeightFromIntersection,
           });
         }
+      }
+    }
+
+    // Connect adjacent intersection nodes along each segment
+    // This allows direct traversal between intersections without backtracking through endpoints
+    for (const seg of segments) {
+      const intersections = segmentIntersections.get(seg.id);
+      if (!intersections || intersections.length < 2) continue;
+
+      const startNodeId = nodeId(seg.start);
+      const endNodeId = nodeId(seg.end);
+
+      // Collect all nodes on this segment: start, end, and all intersections
+      const allNodes = [startNodeId, ...intersections, endNodeId];
+
+      // Sort nodes by position along the segment
+      if (seg.start.y === seg.end.y) {
+        // Horizontal segment - sort by X coordinate
+        allNodes.sort((a, b) => {
+          const ax = a.split('-')[0];
+          const bx = b.split('-')[0];
+          const axNum = calculateXDistance('AA', ax, 1, this.coordinateFormat);
+          const bxNum = calculateXDistance('AA', bx, 1, this.coordinateFormat);
+          return axNum - bxNum;
+        });
+      } else {
+        // Vertical segment - sort by Y coordinate
+        allNodes.sort((a, b) => {
+          const ay = parseInt(a.split('-')[1]);
+          const by = parseInt(b.split('-')[1]);
+          return ay - by;
+        });
+      }
+
+      // Create edges between adjacent nodes
+      for (let i = 0; i < allNodes.length - 1; i++) {
+        const fromNode = allNodes[i];
+        const toNode = allNodes[i + 1];
+        const fromPoint = this.nodes.get(fromNode)!.point;
+        const toPoint = this.nodes.get(toNode)!.point;
+
+        // Calculate distance directly (same logic as segmentDistance)
+        let weight: number;
+        if (fromPoint.x === toPoint.x) {
+          // Vertical
+          weight = Math.abs(toPoint.y - fromPoint.y) * this.tileSize;
+        } else if (fromPoint.y === toPoint.y) {
+          // Horizontal
+          weight = calculateXDistance(fromPoint.x, toPoint.x, this.tileSize, this.coordinateFormat);
+        } else {
+          // Diagonal (shouldn't happen)
+          const xDist = calculateXDistance(fromPoint.x, toPoint.x, this.tileSize, this.coordinateFormat);
+          const yDist = Math.abs(toPoint.y - fromPoint.y) * this.tileSize;
+          weight = xDist + yDist;
+        }
+
+        this.edges.push({
+          id: `${seg.id}-adjacent-${i}`,
+          segmentId: seg.id,
+          from: fromNode,
+          to: toNode,
+          weight,
+        });
+        this.edges.push({
+          id: `${seg.id}-adjacent-${i}-rev`,
+          segmentId: seg.id,
+          from: toNode,
+          to: fromNode,
+          weight,
+        });
       }
     }
   }

@@ -14,6 +14,7 @@ export interface PathResult {
   pathName: string;
   isShortest: boolean;
   percentOverShortest: number;
+  turnCount: number;
 }
 
 export interface CabinetConnection {
@@ -163,7 +164,7 @@ function getTilesBetween(nodeId1: string, nodeId2: string): Set<string> {
       const c1 = Math.floor(n / 26);
       const c2 = n % 26;
       const xCoord = numToLetter(c1) + numToLetter(c2);
-      // Skip the start node - we're leaving it, not traversing to it
+      // Skip the source node (we're leaving it), but include destination and all intermediates
       const tileKey = `${xCoord}-${y1}`;
       if (tileKey !== nodeId1) {
         tiles.add(tileKey);
@@ -175,18 +176,66 @@ function getTilesBetween(nodeId1: string, nodeId2: string): Set<string> {
     const endY = Math.max(parseInt(y1), parseInt(y2));
     for (let y = startY; y <= endY; y++) {
       const tileKey = `${x1}-${y}`;
-      // Skip the start node
+      // Skip the source node, include destination and all intermediates
       if (tileKey !== nodeId1) {
         tiles.add(tileKey);
       }
     }
   } else {
     // Diagonal - shouldn't happen with grid-aligned paths
-    // Only add destination, not source
+    // Only add intermediate tiles, not source or destination
     tiles.add(nodeId2);
   }
 
   return tiles;
+}
+
+/**
+ * Get all intermediate tiles traversed by a full path.
+ */
+function getPathTiles(nodes: string[]): Set<string> {
+  const tiles = new Set<string>();
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const edgeTiles = getTilesBetween(nodes[i], nodes[i + 1]);
+    for (const tile of edgeTiles) tiles.add(tile);
+  }
+  return tiles;
+}
+
+/**
+ * Calculate the number of turns in a path.
+ * A turn occurs when the segment ID changes between consecutive nodes.
+ */
+function calculateTurnCount(nodes: string[], segmentIds: string[]): number {
+  if (nodes.length < 2 || segmentIds.length < 2) return 0;
+
+  let turns = 0;
+  for (let i = 0; i < segmentIds.length - 1; i++) {
+    if (segmentIds[i] !== segmentIds[i + 1]) {
+      turns++;
+    }
+  }
+  return turns;
+}
+
+/**
+ * Simplify a route by removing intermediate nodes that don't represent turns.
+ * Keeps only: start node, end node, and nodes where the segment ID changes.
+ */
+function simplifyRoute(nodes: string[], segmentIds: string[]): string[] {
+  if (nodes.length <= 2) return nodes;
+
+  const simplified: string[] = [nodes[0]]; // Always include start
+
+  for (let i = 0; i < segmentIds.length - 1; i++) {
+    // If segment changes, this node is a turn point
+    if (segmentIds[i] !== segmentIds[i + 1]) {
+      simplified.push(nodes[i + 1]);
+    }
+  }
+
+  simplified.push(nodes[nodes.length - 1]); // Always include end
+  return simplified;
 }
 
 export interface KShortestPath {
@@ -203,12 +252,12 @@ export function kShortestPaths(
   graph: PathGraph,
   startNodeId: string,
   endNodeId: string,
-  k: number
+  k: number,
+  overlapPenalty: number = 50
 ): KShortestPath[] {
   // Each entry stores the full DijkstraPath (nodes + segments) for spur tracking
   const shortestPaths: DijkstraPath[] = [];
   const shortestCosts: number[] = [];
-  const candidates: { path: DijkstraPath; cost: number }[] = [];
 
   // Find the shortest path using Dijkstra
   const first = dijkstra(graph, startNodeId, endNodeId);
@@ -221,6 +270,7 @@ export function kShortestPaths(
 
   for (let i = 1; i < k; i++) {
     const prevPath = shortestPaths[i - 1];
+    const candidates: { path: DijkstraPath; rawCost: number; effectiveCost: number }[] = [];
 
     // Collect spur node candidates:
     // 1. Nodes from the previous path (standard Yen's)
@@ -321,18 +371,29 @@ export function kShortestPaths(
           shortestPaths.some(p => p.segments.join(',') === sig);
 
         if (!isDuplicate) {
-          candidates.push({ path: fullPath, cost });
+          // Compute overlap with already-found paths to penalize redundant routes
+          const pathTiles = getPathTiles(fullNodes);
+          let sharedTiles = 0;
+          for (const p of shortestPaths) {
+            const existingTiles = getPathTiles(p.nodes);
+            for (const tile of pathTiles) {
+              if (existingTiles.has(tile)) sharedTiles++;
+            }
+          }
+          const overlapRatio = pathTiles.size > 0 ? sharedTiles / pathTiles.size : 0;
+          const effectiveCost = cost + overlapPenalty * overlapRatio;
+          candidates.push({ path: fullPath, rawCost: cost, effectiveCost });
         }
       }
     }
 
     if (candidates.length === 0) break;
 
-    // Sort candidates by cost and select the shortest
-    candidates.sort((a, b) => a.cost - b.cost);
+    // Sort candidates by effective cost (distance + overlap penalty)
+    candidates.sort((a, b) => a.effectiveCost - b.effectiveCost);
     const selected = candidates.shift()!;
     shortestPaths.push(selected.path);
-    shortestCosts.push(selected.cost);
+    shortestCosts.push(selected.rawCost);
   }
 
   return shortestPaths.map((p, i) => ({ segments: p.segments, nodes: p.nodes, cost: shortestCosts[i] }));
@@ -587,6 +648,7 @@ export function findShortestPath(
         pathName: directSegment.name,
         isShortest: true,
         percentOverShortest: 0,
+        turnCount: 0,
       };
     }
 
@@ -611,8 +673,12 @@ export function findShortestPath(
   const spillover = pathSpilloverCost(segments, cableType, room.spilloverAdditionalLength);
   const totalDistance = totalTrayDistance + spillover;
 
-  // Generate path name
-  const pathName = segments.map(s => s.name).join(' → ');
+  // Generate path name using simplified nodes (only turn points)
+  const simplifiedNodes = simplifyRoute(dijkstraResult!.nodes, segmentIds);
+  const pathName = simplifiedNodes.join(' → ');
+
+  // Calculate turn count
+  const turnCount = calculateTurnCount(dijkstraResult!.nodes, segmentIds);
 
   return {
     segments,
@@ -625,6 +691,7 @@ export function findShortestPath(
     pathName,
     isShortest: true,
     percentOverShortest: 0,
+    turnCount,
   };
 }
 
@@ -639,8 +706,9 @@ export function findKShortestPaths(
   _endU: number,
   cableType: 'fiber' | 'copper',
   room: Room,
-  k: number = 4,
-  maxDistanceRatio: number = 2.0
+  k: number = 15,
+  maxDistanceRatio: number = 3.0,
+  overlapPenalty: number = 50
 ): PathResult[] {
   // Guard against empty path segments
   if (!room.pathSegments || room.pathSegments.length === 0) {
@@ -666,11 +734,34 @@ export function findKShortestPaths(
   const endNodeId = `${endEntry.entryPoint.x}-${endEntry.entryPoint.y}`;
 
   // Find k-shortest paths using Yen's algorithm
-  const allPaths = kShortestPaths(graph, startNodeId, endNodeId, k);
+  const allPaths = kShortestPaths(graph, startNodeId, endNodeId, k, overlapPenalty);
   if (allPaths.length === 0) return [];
 
   // Build path results
   const results: PathResult[] = [];
+
+  // Compute true shortest distance before sorting so percentOverShortest is accurate
+  let trueShortestDistance = Infinity;
+  for (let i = 0; i < allPaths.length; i++) {
+    const segmentIds = allPaths[i].segments;
+    const segments: PathSegment[] = [];
+    const segmentSet = new Set<string>();
+    for (const id of segmentIds) {
+      const seg = graph.getSegment(id);
+      if (seg && !segmentSet.has(seg.id)) {
+        segmentSet.add(seg.id);
+        segments.push(seg);
+      }
+    }
+    if (segments.length > 0) {
+      const spillover = pathSpilloverCost(segments, cableType, room.spilloverAdditionalLength);
+      const totalDistance = allPaths[i].cost + spillover;
+      if (totalDistance < trueShortestDistance) {
+        trueShortestDistance = totalDistance;
+      }
+    }
+  }
+
   for (let i = 0; i < allPaths.length; i++) {
     const { segments: segmentIds, cost: totalTrayDistance } = allPaths[i];
     
@@ -698,7 +789,12 @@ export function findKShortestPaths(
     const spillover = pathSpilloverCost(segments, cableType, room.spilloverAdditionalLength);
     const totalDistance = totalTrayDistance + spillover;
 
-    const pathName = segments.map(s => s.name).join(' → ');
+    // Generate path name using simplified nodes (only turn points)
+    const simplifiedNodes = simplifyRoute(allPaths[i].nodes, segmentIds);
+    const pathName = simplifiedNodes.join(' → ');
+
+    // Calculate turn count
+    const turnCount = calculateTurnCount(allPaths[i].nodes, segmentIds);
 
     results.push({
       segments,
@@ -710,10 +806,37 @@ export function findKShortestPaths(
       totalDistance,
       pathName,
       isShortest: i === 0,
-      percentOverShortest: i === 0 ? 0 : ((totalDistance / results[0].totalDistance) - 1) * 100,
+      percentOverShortest: i === 0 ? 0 : ((totalDistance / trueShortestDistance) - 1) * 100,
+      turnCount,
     });
   }
 
+  // Sort by (turnCount, totalDistance) - shorter distance preferred for equal turns
+  results.sort((a, b) => {
+    if (a.turnCount !== b.turnCount) {
+      return a.turnCount - b.turnCount;
+    }
+    return a.totalDistance - b.totalDistance;
+  });
+
+  // Update isShortest after sorting; percentOverShortest already computed against true shortest
+  if (results.length > 0) {
+    results.forEach((result, index) => {
+      result.isShortest = index === 0;
+    });
+  }
+
+  // Deduplicate paths based on segment ID sequence
+  const deduplicated: PathResult[] = [];
+  const seenSignatures = new Set<string>();
+  for (const result of results) {
+    const signature = result.segments.map(s => s.id).join(',');
+    if (!seenSignatures.has(signature)) {
+      seenSignatures.add(signature);
+      deduplicated.push(result);
+    }
+  }
+
   // Prune paths that exceed max ratio
-  return prunePaths(results, maxDistanceRatio);
+  return prunePaths(deduplicated, maxDistanceRatio);
 }

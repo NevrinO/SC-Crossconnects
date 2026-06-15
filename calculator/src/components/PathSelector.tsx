@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { PathResult } from '../lib/pathfinding';
 
 interface PathSelectorProps {
@@ -8,7 +9,19 @@ interface PathSelectorProps {
   error: string | null;
 }
 
+const INITIAL_LIMIT = 4;
+
 export default function PathSelector({ paths, selectedPath, onSelect, isCalculating, error }: PathSelectorProps) {
+  const [showAll, setShowAll] = useState(false);
+
+  // Reset collapsed state when paths change (new calculation)
+  useEffect(() => {
+    setShowAll(false);
+  }, [paths]);
+
+  const visiblePaths = showAll ? paths : paths.slice(0, INITIAL_LIMIT);
+  const hasMore = paths.length > INITIAL_LIMIT;
+
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm font-medium text-gray-700">
@@ -25,7 +38,7 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
       )}
       {!isCalculating && !error && paths.length > 0 && (
         <div className="rounded-md border border-gray-300 bg-white">
-          {paths.map((path, index) => {
+          {visiblePaths.map((path, index) => {
             const isSelected = selectedPath === path;
             return (
               <div
@@ -57,7 +70,7 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
                     </div>
                     {/* Full route — node-level path e.g. FT132→FW132→FW185→GG185 */}
                     <div className="mt-0.5 text-xs text-gray-500">
-                      Route: {path.nodes.map(n => n.replace('-', '')).join('→')}
+                      Route: {path.pathName}
                     </div>
                     {/* Distance breakdown */}
                     <div className="mt-0.5 text-xs text-gray-400">
@@ -68,6 +81,17 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
               </div>
             );
           })}
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAll(!showAll)}
+              className="w-full border-t border-gray-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+            >
+              {showAll
+                ? `Show less (${INITIAL_LIMIT} of ${paths.length})`
+                : `Show ${paths.length - INITIAL_LIMIT} more paths`}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -11,14 +11,26 @@ interface UsePathCalculationResult {
   selectPath: (path: PathResult) => void;
 }
 
+export interface PathfindingOptions {
+  k: number;
+  overlapPenalty: number;
+  maxDistanceRatio: number;
+}
+
 export function usePathCalculation(
   room: Room | undefined,
   startCab: string,
   endCab: string,
   cableType: 'fiber' | 'copper' | null,
   startU: number = 42, // Default U count for standard cabinets
-  endU: number = 42
+  endU: number = 42,
+  options: Partial<PathfindingOptions> = {}
 ): UsePathCalculationResult {
+  const {
+    k = 15,
+    overlapPenalty = 50,
+    maxDistanceRatio = 3.0,
+  } = options;
   const [paths, setPaths] = useState<PathResult[]>([]);
   const [selectedPath, setSelectedPath] = useState<PathResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -76,8 +88,9 @@ export function usePathCalculation(
         endU,
         cableType,
         room,
-        10, // k=10 paths to find more alternatives
-        3.0 // max 300% of shortest (show more alternatives)
+        k,
+        maxDistanceRatio,
+        overlapPenalty
       );
 
       // If no paths found (e.g., cross-row routing at same position), fall back to single shortest path
@@ -142,7 +155,7 @@ export function usePathCalculation(
     return () => {
       isMounted = false;
     };
-  }, [room, startCab, endCab, cableType, startU, endU]);
+  }, [room, startCab, endCab, cableType, startU, endU, k, overlapPenalty, maxDistanceRatio]);
 
   const selectPath = (path: PathResult) => {
     setSelectedPath(path);

@@ -52,6 +52,7 @@ export interface CalculationResult {
   path: string;
   sameX: boolean;
   cableType: 'fiber' | 'copper';
+  turnCount?: number;
 }
 
 export interface CabinetInfo {

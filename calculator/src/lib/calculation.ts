@@ -252,6 +252,7 @@ export function calculateManual(
     path: pathResult.pathName,
     sameX,
     cableType,
+    turnCount: pathResult.turnCount,
   };
 }
 
@@ -293,6 +294,7 @@ export function calculateShortestPath(
       pathName: path.name,
       isShortest: true,
       percentOverShortest: 0,
+      turnCount: 0,
     };
 
     const result = calculateManual(start, end, pathResult, cableType, slack, room);

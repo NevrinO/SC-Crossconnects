@@ -111,7 +111,7 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
+    <div className="mx-auto max-w-screen-2xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
         <div className="flex space-x-4">
@@ -172,7 +172,9 @@ export default function App() {
 
       {activeTab === 'manual' && (
         <>
-          <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+            {/* Left column - inputs */}
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <RoomSelector
               rooms={rooms}
               selectedRoomId={selectedRoomId}
@@ -182,21 +184,16 @@ export default function App() {
               }}
             />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-start">
-              <CabinetInput
-                label="Starting Rack"
-                value={startCabinet}
-                onChange={setStartCabinet}
-                room={selectedRoom}
-              />
+            <div className="flex flex-col gap-4">
               <div className="flex items-start gap-2">
-                <CabinetInput
-                  label="Ending Rack"
-                  value={endCabinet}
-                  onChange={setEndCabinet}
-                  room={selectedRoom}
-                />
-                {/* Feature 1: Swap start/end button */}
+                <div className="flex-1">
+                  <CabinetInput
+                    label="Starting Rack"
+                    value={startCabinet}
+                    onChange={setStartCabinet}
+                    room={selectedRoom}
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -204,12 +201,18 @@ export default function App() {
                     setStartCabinet(endCabinet)
                     setEndCabinet(temp)
                   }}
-                  className="mt-6 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm"
-                  title="Swap Start and End (X)"
+                  className="mt-6 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm shrink-0"
+                  title="Swap"
                 >
                   ⇄
                 </button>
               </div>
+              <CabinetInput
+                label="Ending Rack"
+                value={endCabinet}
+                onChange={setEndCabinet}
+                room={selectedRoom}
+              />
             </div>
 
             <CableTypeSelector
@@ -238,80 +241,84 @@ export default function App() {
               disabled={!canCalculate}
               onClick={handleCalculate}
             />
+            </div>
+
+            {/* Right column - Room Map */}
+            {selectedRoom && (
+              <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm self-start h-[calc(100vh-100px)] min-h-[400px] overflow-hidden">
+                <RoomMapContainer
+                  room={selectedRoom}
+                  startCabinet={startCabinet}
+                  endCabinet={endCabinet}
+                  selectedPathSegments={selectedPath?.segments}
+                  cableType={cableType}
+                  onSelectStart={setStartCabinet}
+                  onSelectEnd={setEndCabinet}
+                  onCalculate={handleCalculate}
+                >
+                  {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, showGrid, showCabinets, showSegments, showAnimation, showPathTooltips }) => (
+                    <>
+                      {showGrid && (
+                        <GridLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                        />
+                      )}
+                      {showCabinets && (
+                        <CabinetLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                          cabinets={selectedRoom.cabinets || []}
+                          startCabinet={startCabinet}
+                          endCabinet={endCabinet}
+                          highlightedCabinet={highlightedCabinet}
+                          onCabinetClick={onCabinetClick}
+                        />
+                      )}
+                      {showSegments && (
+                        <SegmentLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                          segments={selectedRoom.pathSegments}
+                          selectedPathSegments={selectedPathSegments}
+                          cableType={cableType}
+                          showPathTooltips={showPathTooltips}
+                        />
+                      )}
+                      {showAnimation && selectedPathSegments && (
+                        <PathAnimationLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                          selectedPathSegments={selectedPathSegments}
+                          selectedPathNodes={selectedPath?.nodes}
+                          visible={showAnimation}
+                        />
+                      )}
+                    </>
+                  )}
+                </RoomMapContainer>
+              </div>
+            )}
           </div>
 
-          {/* Room Map - only shows when a room is selected */}
-          {selectedRoom && (
-            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" style={{ height: '600px', minHeight: '600px' }}>
-              <RoomMapContainer
-                room={selectedRoom}
-                startCabinet={startCabinet}
-                endCabinet={endCabinet}
-                selectedPathSegments={selectedPath?.segments}
-                cableType={cableType}
-                onSelectStart={setStartCabinet}
-                onSelectEnd={setEndCabinet}
-                onCalculate={handleCalculate}
+          {/* Results - full width below */}
+          <div className="mt-6">
+            <ResultsTable results={results} />
+
+            {results.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setResults([])}
+                className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
               >
-                {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, showGrid, showCabinets, showSegments, showAnimation, showPathTooltips }) => (
-                  <>
-                    {showGrid && (
-                      <GridLayer
-                        bounds={bounds}
-                        cellSize={cellSize}
-                        orientation={orientation}
-                      />
-                    )}
-                    {showCabinets && (
-                      <CabinetLayer
-                        bounds={bounds}
-                        cellSize={cellSize}
-                        orientation={orientation}
-                        cabinets={selectedRoom.cabinets || []}
-                        startCabinet={startCabinet}
-                        endCabinet={endCabinet}
-                        highlightedCabinet={highlightedCabinet}
-                        onCabinetClick={onCabinetClick}
-                      />
-                    )}
-                    {showSegments && (
-                      <SegmentLayer
-                        bounds={bounds}
-                        cellSize={cellSize}
-                        orientation={orientation}
-                        segments={selectedRoom.pathSegments}
-                        selectedPathSegments={selectedPathSegments}
-                        cableType={cableType}
-                        showPathTooltips={showPathTooltips}
-                      />
-                    )}
-                    {showAnimation && selectedPathSegments && (
-                      <PathAnimationLayer
-                        bounds={bounds}
-                        cellSize={cellSize}
-                        orientation={orientation}
-                        selectedPathSegments={selectedPathSegments}
-                        selectedPathNodes={selectedPath?.nodes}
-                        visible={showAnimation}
-                      />
-                    )}
-                  </>
-                )}
-              </RoomMapContainer>
-            </div>
-          )}
-
-          <ResultsTable results={results} />
-
-          {results.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setResults([])}
-              className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
-            >
-              Clear results
-            </button>
-          )}
+                Clear results
+              </button>
+            )}
+          </div>
         </>
       )}
 

@@ -34,6 +34,9 @@ export default function ResultsTable({ results }: ResultsTableProps) {
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="text-lg font-bold text-blue-700">{result.lengthFt} ft</span>
                   <span className="text-sm text-gray-500">({result.lengthM} m)</span>
+                  {result.turnCount !== undefined && (
+                    <span className="text-xs text-gray-400">({result.turnCount} turns)</span>
+                  )}
                 </div>
                 <div className="text-xs text-gray-400">{result.room}</div>
               </div>
