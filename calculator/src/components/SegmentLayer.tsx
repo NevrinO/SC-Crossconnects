@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { GridBounds, gridToScreenCenter, letterLabelToIndex } from '../lib/grid-utils'
+import { createPortal } from 'react-dom'
+import { GridBounds, gridToScreenCenter } from '../lib/grid-utils'
 import { PathSegment } from '../types/room'
 
 interface SegmentLayerProps {
@@ -20,7 +21,7 @@ export function SegmentLayer({
   cableType,
 }: SegmentLayerProps) {
   const [hoveredSegment, setHoveredSegment] = useState<PathSegment | null>(null)
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null)
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
 
   // Determine segment visual state
   const getSegmentState = (segment: PathSegment): 'muted' | 'available' | 'selected' => {
@@ -42,81 +43,121 @@ export function SegmentLayer({
     return 'muted'
   }
 
+  // Get segment color based on type (matching config tool)
+  const getSegmentColor = (segment: PathSegment): string => {
+    if (segment.type === 'fiber-path') return '#3b82f6' // blue-500
+    if (segment.type === 'copper-path') return '#f97316' // orange-500
+    return '#8b5cf6' // violet-500 (mixed-path)
+  }
+
   // Get segment style based on state
-  const getSegmentStyle = (state: 'muted' | 'available' | 'selected') => {
+  const getSegmentStyle = (state: 'muted' | 'available' | 'selected', segment: PathSegment, zoom: number) => {
+    const baseColor = getSegmentColor(segment)
     switch (state) {
       case 'selected':
-        return { stroke: '#2563eb', strokeWidth: 4, opacity: 1 } // blue-600, thick
+        return { stroke: baseColor, strokeWidth: 5 * zoom, opacity: 1 }
       case 'available':
-        return { stroke: '#60a5fa', strokeWidth: 2, opacity: 0.7 } // blue-400, medium
+        return { stroke: baseColor, strokeWidth: 3 * zoom, opacity: 0.7 }
       case 'muted':
       default:
-        return { stroke: '#d1d5db', strokeWidth: 1, opacity: 0.4 } // gray-300, thin
+        return { stroke: baseColor, strokeWidth: 2 * zoom, opacity: 0.5 } // use type color with low opacity
     }
   }
 
-  // Calculate segment length in grid units
-  const getSegmentLength = (segment: PathSegment): number => {
-    // Convert letter labels to numeric indices for x-axis
-    const startXIndex = letterLabelToIndex(segment.start.x)
-    const endXIndex = letterLabelToIndex(segment.end.x)
-    const dx = Math.abs(endXIndex - startXIndex)
-    const dy = Math.abs(segment.end.y - segment.start.y)
-    return Math.sqrt(dx * dx + dy * dy)
-  }
+  // Helper to compare letter labels for sorting
+  const compareXLabels = (a: string, b: string) => a.localeCompare(b)
+
+  // Build path groups and compute perpendicular offsets for co-path segments
+  const pathGroups = new Map<string, string[]>()
+  segments.forEach((seg) => {
+    const isH = seg.start.y === seg.end.y
+    const key = isH
+      ? `H:${seg.start.y}:${[seg.start.x, seg.end.x].sort(compareXLabels).join('-')}`
+      : `V:${seg.start.x}:${[seg.start.y, seg.end.y].sort((a,b)=>a-b).join('-')}`
+    const group = pathGroups.get(key) ?? []
+    group.push(seg.id)
+    pathGroups.set(key, group)
+  })
+
+  // Compute perpendicular offset for each segment by ID
+  // Offset scales with zoom (cellSize = 40 * zoom, so zoom = cellSize / 40)
+  const zoom = cellSize / 40
+  const OFFSET_PX = 5 * zoom
+  const segmentOffsets = new Map<string, number>()
+  pathGroups.forEach((segmentIds) => {
+    const count = segmentIds.length
+    segmentIds.forEach((segId, slot) => {
+      // Centre the group: slot 0 of 1 → 0, slot 0 of 2 → -0.5, slot 1 of 2 → +0.5, etc.
+      segmentOffsets.set(segId, (slot - (count - 1) / 2) * OFFSET_PX)
+    })
+  })
 
   return (
-    <g>
-      {segments.map(segment => {
-        const startPos = gridToScreenCenter(segment.start, bounds, cellSize, orientation)
-        const endPos = gridToScreenCenter(segment.end, bounds, cellSize, orientation)
-        if (!startPos || !endPos) return null
+    <>
+      <g>
+        {segments.map(segment => {
+          const startPos = gridToScreenCenter(segment.start, bounds, cellSize, orientation)
+          const endPos = gridToScreenCenter(segment.end, bounds, cellSize, orientation)
+          if (!startPos || !endPos) return null
 
-        const state = getSegmentState(segment)
-        const style = getSegmentStyle(state)
-        const isHovered = hoveredSegment?.id === segment.id
+          // Apply perpendicular offset so co-path segments don't overlap
+          const offset = segmentOffsets.get(segment.id) ?? 0
+          const isHorizontalSeg = startPos.y === endPos.y
+          const ox = isHorizontalSeg ? 0 : offset
+          const oy = isHorizontalSeg ? offset : 0
+          const rx1 = startPos.x + ox, ry1 = startPos.y + oy, rx2 = endPos.x + ox, ry2 = endPos.y + oy
 
-        return (
-          <line
-            key={segment.id}
-            x1={startPos.x}
-            y1={startPos.y}
-            x2={endPos.x}
-            y2={endPos.y}
-            stroke={style.stroke}
-            strokeWidth={isHovered ? style.strokeWidth + 2 : style.strokeWidth}
-            opacity={isHovered ? 1 : style.opacity}
-            strokeLinecap="round"
-            onMouseEnter={() => {
-              setHoveredSegment(segment)
-              // Calculate midpoint in SVG coordinates
-              const midX = (startPos.x + endPos.x) / 2
-              const midY = (startPos.y + endPos.y) / 2
-              setTooltipPos({ x: midX, y: midY })
-            }}
-            onMouseLeave={() => {
-              setHoveredSegment(null)
-              setTooltipPos(null)
-            }}
-            style={{ cursor: 'pointer' }}
-          />
-        )
-      })}
+          const state = getSegmentState(segment)
+          const style = getSegmentStyle(state, segment, zoom)
+          const isHovered = hoveredSegment?.id === segment.id
 
-      {hoveredSegment && tooltipPos && (
-        <foreignObject
-          x={tooltipPos.x - 60}
-          y={tooltipPos.y - 40}
-          width={120}
-          height={40}
-          style={{ pointerEvents: 'none' }}
+          return (
+            <line
+              key={segment.id}
+              x1={rx1}
+              y1={ry1}
+              x2={rx2}
+              y2={ry2}
+              stroke={style.stroke}
+              strokeWidth={isHovered ? style.strokeWidth + 2 : style.strokeWidth}
+              opacity={isHovered ? 1 : style.opacity}
+              strokeLinecap="round"
+              onMouseEnter={(e) => {
+                setHoveredSegment(segment)
+                setMousePos({ x: e.clientX, y: e.clientY })
+              }}
+              onMouseMove={(e) => {
+                if (hoveredSegment?.id === segment.id) {
+                  setMousePos({ x: e.clientX, y: e.clientY })
+                }
+              }}
+              onMouseLeave={() => {
+                setHoveredSegment(null)
+                setMousePos(null)
+              }}
+              style={{ cursor: 'pointer' }}
+            />
+          )
+        })}
+      </g>
+      {hoveredSegment && mousePos && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: mousePos.x + 10,
+            top: mousePos.y + 10,
+            pointerEvents: 'none',
+            zIndex: 1000
+          }}
         >
           <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 shadow-lg">
-            <div className="font-semibold">{hoveredSegment.id}</div>
-            <div className="text-gray-300">{getSegmentLength(hoveredSegment).toFixed(1)} units</div>
+            <div className="font-semibold">{hoveredSegment.name}</div>
+            {hoveredSegment.fiberHeight && <div className="text-blue-300">Fiber: {hoveredSegment.fiberHeight}ft</div>}
+            {hoveredSegment.copperHeight && <div className="text-orange-300">Copper: {hoveredSegment.copperHeight}ft</div>}
           </div>
-        </foreignObject>
+        </div>,
+        document.body
       )}
-    </g>
+    </>
   )
 }

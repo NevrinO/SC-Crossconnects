@@ -1,481 +1,2304 @@
 {
   "rooms": [
     {
-      "id": "10",
-      "name": "CR-10",
-      "tileSize": 2,
-      "offset": 4,
-      "spilloverAdditionalLength": 4,
-      "pathSegments": [
-        {
-          "id": "fiber-east-114",
-          "name": "Fiber East (114)",
-          "start": {
-            "x": "CT",
-            "y": 14
-          },
-          "end": {
-            "x": "EW",
-            "y": 14
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
+    "id": "CR-14",
+    "name": "Computer Room 14",
+    "tileSize": 2,
+    "offset": 4,
+    "spilloverAdditionalLength": 1,
+    "pathSegments": [
+      {
+        "id": "b0083553-92e3-4f41-9ee2-c8ccd0407e02",
+        "name": "FK132-GM132",
+        "start": {
+          "x": "FK",
+          "y": 132
         },
-        {
-          "id": "fiber-west-118",
-          "name": "Fiber West (118)",
-          "start": {
-            "x": "CT",
-            "y": 18
-          },
-          "end": {
-            "x": "EW",
-            "y": 18
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
+        "end": {
+          "x": "GM",
+          "y": 132
         },
-        {
-          "id": "copper-east-114",
-          "name": "Copper East (114)",
-          "start": {
-            "x": "CT",
-            "y": 14
-          },
-          "end": {
-            "x": "EW",
-            "y": 14
-          },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "copper-path"
-        },
-        {
-          "id": "copper-west-118",
-          "name": "Copper West (118)",
-          "start": {
-            "x": "CT",
-            "y": 18
-          },
-          "end": {
-            "x": "EW",
-            "y": 18
-          },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "copper-path"
-        }
-      ],
-      "specialCabinets": {
-        "networkRacks": [
-          "EU108",
-          "EU109",
-          "EU110",
-          "EU111",
-          "EU112",
-          "EU113",
-          "EU114",
-          "EU115",
-          "EU116",
-          "EU117",
-          "EU118",
-          "EU119",
-          "EU120",
-          "EU121",
-          "EU122"
-        ],
-        "halfCabs": [],
-        "quarterCabs": []
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
       },
-      "coordinateFormat": "letters-first",
-      "orientation": "numbers-horizontal",
-      "xyRange": {
-        "start": { "x": "CT", "y": 105 },
-        "end": { "x": "EW", "y": 129 }
+      {
+        "id": "c8be033e-68f2-4feb-9f89-a07b33569ed2",
+        "name": "FK132-GM132",
+        "start": {
+          "x": "FK",
+          "y": 132
+        },
+        "end": {
+          "x": "GM",
+          "y": 132
+        },
+        "fiberHeight": null,
+        "copperHeight": 6,
+        "type": "copper-path"
       },
-      "startCorner": "top-left"
+      {
+        "id": "b9ff38f2-739a-4821-a2e9-37e11b53d9e4",
+        "name": "GM136-FK136",
+        "start": {
+          "x": "GM",
+          "y": 136
+        },
+        "end": {
+          "x": "FK",
+          "y": 136
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "663b7af2-390a-45e2-86aa-c9b15c8794bc",
+        "name": "FK139-GM139",
+        "start": {
+          "x": "FK",
+          "y": 139
+        },
+        "end": {
+          "x": "GM",
+          "y": 139
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "de4e5d91-58f8-41a8-b6aa-53f47ec31bf8",
+        "name": "GM143-FK143",
+        "start": {
+          "x": "GM",
+          "y": 143
+        },
+        "end": {
+          "x": "FK",
+          "y": 143
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "54e011cd-fab3-40ab-986d-8da54449d1e0",
+        "name": "FK146-GM146",
+        "start": {
+          "x": "FK",
+          "y": 146
+        },
+        "end": {
+          "x": "GM",
+          "y": 146
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "d7053b96-72ad-4088-a856-5e15d646a419",
+        "name": "GM150-FK150",
+        "start": {
+          "x": "GM",
+          "y": 150
+        },
+        "end": {
+          "x": "FK",
+          "y": 150
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "f80b1c61-503c-4dea-a12e-5810f2ce0259",
+        "name": "FN155-GD155",
+        "start": {
+          "x": "FN",
+          "y": 155
+        },
+        "end": {
+          "x": "GD",
+          "y": 155
+        },
+        "fiberHeight": 10,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "2f554eaf-3391-466c-8a26-2fdfb205761b",
+        "name": "FK171-GM171",
+        "start": {
+          "x": "FK",
+          "y": 171
+        },
+        "end": {
+          "x": "GM",
+          "y": 171
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "5a78892f-f89c-4a4b-a786-6a4ec1e9a43a",
+        "name": "GM174-FK174",
+        "start": {
+          "x": "GM",
+          "y": 174
+        },
+        "end": {
+          "x": "FK",
+          "y": 174
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "8f201829-19b7-498b-bc45-6f396b7fe9c5",
+        "name": "FK178-GM178",
+        "start": {
+          "x": "FK",
+          "y": 178
+        },
+        "end": {
+          "x": "GM",
+          "y": 178
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "da847fd7-2a46-4e54-95b2-06a7da91d815",
+        "name": "GM181-FK181",
+        "start": {
+          "x": "GM",
+          "y": 181
+        },
+        "end": {
+          "x": "FK",
+          "y": 181
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "f204635e-29bf-4df4-b480-454a197462b6",
+        "name": "FK185-GM185",
+        "start": {
+          "x": "FK",
+          "y": 185
+        },
+        "end": {
+          "x": "GM",
+          "y": 185
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "ab347f51-27ff-407a-93e4-ce12a3dae865",
+        "name": "FZ185-FZ132",
+        "start": {
+          "x": "FZ",
+          "y": 185
+        },
+        "end": {
+          "x": "FZ",
+          "y": 132
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "8f1e1082-2acd-43dd-88e5-64d7d0cf55b3",
+        "name": "FW132-FW185",
+        "start": {
+          "x": "FW",
+          "y": 132
+        },
+        "end": {
+          "x": "FW",
+          "y": 185
+        },
+        "fiberHeight": 8,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "e2cdc2c1-2cd2-48a5-a761-a6ee09c5a7b5",
+        "name": "FN185-FN132",
+        "start": {
+          "x": "FN",
+          "y": 185
+        },
+        "end": {
+          "x": "FN",
+          "y": 132
+        },
+        "fiberHeight": 10,
+        "copperHeight": null,
+        "type": "fiber-path"
+      },
+      {
+        "id": "0072ed63-0949-4e7b-a386-6c8316cd50ad",
+        "name": "GD132-GD185",
+        "start": {
+          "x": "GD",
+          "y": 132
+        },
+        "end": {
+          "x": "GD",
+          "y": 185
+        },
+        "fiberHeight": 10,
+        "copperHeight": null,
+        "type": "fiber-path"
+      }
+    ],
+    "specialCabinets": {
+      "networkRacks": [],
+      "halfCabs": [],
+      "quarterCabs": []
     },
-    {
-      "id": "14",
-      "name": "CR-14",
-      "tileSize": 2,
-      "offset": 4,
-      "spilloverAdditionalLength": 4,
-      "pathSegments": [
-        {
-          "id": "horizontal-132",
-          "name": "FK132-GN132",
-          "start": {
-            "x": "FK",
-            "y": 132
-          },
-          "end": {
-            "x": "GN",
-            "y": 132
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "horizontal-136",
-          "name": "FK136-GN136",
-          "start": {
-            "x": "FK",
-            "y": 136
-          },
-          "end": {
-            "x": "GN",
-            "y": 136
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "horizontal-139",
-          "name": "FK139-GN139",
-          "start": {
-            "x": "FK",
-            "y": 139
-          },
-          "end": {
-            "x": "GN",
-            "y": 139
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "horizontal-171",
-          "name": "FK171-GN171",
-          "start": {
-            "x": "FK",
-            "y": 171
-          },
-          "end": {
-            "x": "GN",
-            "y": 171
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "horizontal-185",
-          "name": "FK185-GM185",
-          "start": {
-            "x": "FK",
-            "y": 185
-          },
-          "end": {
-            "x": "GM",
-            "y": 185
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "vertical-fw",
-          "name": "Old Fiber North (FW)",
-          "start": {
-            "x": "FW",
-            "y": 132
-          },
-          "end": {
-            "x": "FW",
-            "y": 185
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "vertical-gd",
-          "name": "Fiber South (GD)",
-          "start": {
-            "x": "GD",
-            "y": 132
-          },
-          "end": {
-            "x": "GD",
-            "y": 185
-          },
-          "fiberHeight": 8,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "vertical-fz",
-          "name": "Old Fiber South (FZ)",
-          "start": {
-            "x": "FZ",
-            "y": 132
-          },
-          "end": {
-            "x": "FZ",
-            "y": 185
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        }
-      ],
-      "specialCabinets": {
-        "networkRacks": [
-          "FM155",
-          "FN155",
-          "FO155",
-          "FP155",
-          "FQ155",
-          "FR155",
-          "FS155",
-          "FT155",
-          "FU155",
-          "FV155",
-          "FW155",
-          "FX155",
-          "FY155",
-          "FZ155",
-          "GA155",
-          "GB155",
-          "GC155",
-          "GD155"
-        ],
-        "halfCabs": [
-          "FR132A",
-          "FR132B",
-          "FS132A",
-          "FS132B",
-          "FV132A",
-          "FV132B",
-          "FW132A",
-          "FW132B",
-          "FX132A",
-          "FX132B",
-          "FY132A",
-          "FY132B",
-          "FZ132A",
-          "FZ132B",
-          "GA132A",
-          "GA132B",
-          "GB132A",
-          "GB132B",
-          "GC132A",
-          "GC132B",
-          "GD132A",
-          "GD132B"
-        ],
-        "quarterCabs": [
-          "FZ185A",
-          "FZ185B",
-          "FZ185C",
-          "FZ185D",
-          "GA185A",
-          "GA185B",
-          "GA185C",
-          "GA185D",
-          "GB185A",
-          "GB185B",
-          "GB185C",
-          "GB185D",
-          "GC185A",
-          "GC185B",
-          "GC185C",
-          "GC185D",
-          "GD185A",
-          "GD185B",
-          "GD185C",
-          "GD185D",
-          "GE185A",
-          "GE185B",
-          "GE185C",
-          "GE185D"
-        ]
+    "coordinateFormat": "letters-first",
+    "orientation": "numbers-horizontal",
+    "xyRange": {
+      "start": {
+        "x": "FF",
+        "y": 130
       },
-      "coordinateFormat": "letters-first",
-      "orientation": "numbers-vertical",
-      "xyRange": {
-        "start": { "x": "FJ", "y": 132 },
-        "end": { "x": "GN", "y": 185 }
-      },
-      "startCorner": "top-left"
+      "end": {
+        "x": "GQ",
+        "y": 190
+      }
     },
-    {
-      "id": "28",
-      "name": "CR-28",
-      "tileSize": 2,
-      "offset": 4,
-      "spilloverAdditionalLength": 4,
-      "pathSegments": [
-        {
-          "id": "fiber-south-is",
-          "name": "Fiber South (IS)",
-          "start": {
-            "x": "IS",
-            "y": 85
-          },
-          "end": {
-            "x": "IS",
-            "y": 152
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "fiber-north-if",
-          "name": "Fiber North (IF)",
-          "start": {
-            "x": "IF",
-            "y": 85
-          },
-          "end": {
-            "x": "IF",
-            "y": 152
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "fiber-hiq-hy",
-          "name": "Fiber HIQ (HY)",
-          "start": {
-            "x": "HY",
-            "y": 85
-          },
-          "end": {
-            "x": "HY",
-            "y": 152
-          },
-          "fiberHeight": 6,
-          "copperHeight": null,
-          "type": "fiber-path"
-        },
-        {
-          "id": "copper-south-is",
-          "name": "Copper South (IS)",
-          "start": {
-            "x": "IS",
-            "y": 85
-          },
-          "end": {
-            "x": "IS",
-            "y": 152
-          },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "copper-path"
-        },
-        {
-          "id": "copper-north-if",
-          "name": "Copper North (IF)",
-          "start": {
-            "x": "IF",
-            "y": 85
-          },
-          "end": {
-            "x": "IF",
-            "y": 152
-          },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "copper-path"
-        },
-        {
-          "id": "copper-hiq-hy",
-          "name": "Copper HIQ (HY)",
-          "start": {
-            "x": "HY",
-            "y": 85
-          },
-          "end": {
-            "x": "HY",
-            "y": 152
-          },
-          "fiberHeight": null,
-          "copperHeight": 4,
-          "type": "copper-path"
-        }
-      ],
-      "specialCabinets": {
-        "networkRacks": [
-          "IG085",
-          "IH085",
-          "II085",
-          "IJ085",
-          "IK085",
-          "IL085",
-          "IM085",
-          "IN085",
-          "IO085",
-          "IP085",
-          "IQ085",
-          "IR085",
-          "IG086",
-          "IH086",
-          "II086",
-          "IJ086",
-          "IK086",
-          "IL086",
-          "IM086",
-          "IN086",
-          "IO086",
-          "IP086",
-          "IQ086",
-          "IR086",
-          "IG087",
-          "IH087",
-          "II087",
-          "IJ087",
-          "IK087",
-          "IL087",
-          "IM087",
-          "IN087",
-          "IO087",
-          "IP087",
-          "IQ087",
-          "IR087",
-          "IG088",
-          "IH088",
-          "II088",
-          "IJ088",
-          "IK088",
-          "IL088",
-          "IM088",
-          "IN088",
-          "IO088",
-          "IP088",
-          "IQ088",
-          "IR088",
-          "IG089",
-          "IH089",
-          "II089",
-          "IJ089",
-          "IK089",
-          "IL089",
-          "IM089",
-          "IN089",
-          "IO089",
-          "IP089",
-          "IQ089",
-          "IR089"
-        ],
-        "halfCabs": [],
-        "quarterCabs": []
+    "startCorner": "bottom-left",
+    "cabinets": [
+      {
+        "id": "FK132",
+        "x": "FK",
+        "y": 132,
+        "type": "full_cab"
       },
-      "coordinateFormat": "letters-first",
-      "orientation": "numbers-vertical",
-      "xyRange": {
-        "start": { "x": "HM", "y": 85 },
-        "end": { "x": "IV", "y": 152 }
+      {
+        "id": "FL132",
+        "x": "FL",
+        "y": 132,
+        "type": "full_cab"
       },
-      "startCorner": "top-left"
-    }
-  ]
+      {
+        "id": "FM132",
+        "x": "FM",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN132",
+        "x": "FN",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO132",
+        "x": "FO",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP132",
+        "x": "FP",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ132",
+        "x": "FQ",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR132",
+        "x": "FR",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS132",
+        "x": "FS",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT132",
+        "x": "FT",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU132",
+        "x": "FU",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV132",
+        "x": "FV",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW132",
+        "x": "FW",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX132",
+        "x": "FX",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY132",
+        "x": "FY",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ132",
+        "x": "FZ",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA132",
+        "x": "GA",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB132",
+        "x": "GB",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC132",
+        "x": "GC",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD132",
+        "x": "GD",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE132",
+        "x": "GE",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF132",
+        "x": "GF",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG132",
+        "x": "GG",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH132",
+        "x": "GH",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI132",
+        "x": "GI",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ132",
+        "x": "GJ",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK132",
+        "x": "GK",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL132",
+        "x": "GL",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM132",
+        "x": "GM",
+        "y": 132,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM136",
+        "x": "GM",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL136",
+        "x": "GL",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK136",
+        "x": "GK",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ136",
+        "x": "GJ",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI136",
+        "x": "GI",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH136",
+        "x": "GH",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG136",
+        "x": "GG",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF136",
+        "x": "GF",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE136",
+        "x": "GE",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD136",
+        "x": "GD",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC136",
+        "x": "GC",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB136",
+        "x": "GB",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA136",
+        "x": "GA",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ136",
+        "x": "FZ",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY136",
+        "x": "FY",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX136",
+        "x": "FX",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW136",
+        "x": "FW",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV136",
+        "x": "FV",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU136",
+        "x": "FU",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT136",
+        "x": "FT",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS136",
+        "x": "FS",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR136",
+        "x": "FR",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ136",
+        "x": "FQ",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP136",
+        "x": "FP",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO136",
+        "x": "FO",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN136",
+        "x": "FN",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM136",
+        "x": "FM",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL136",
+        "x": "FL",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK136",
+        "x": "FK",
+        "y": 136,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK139",
+        "x": "FK",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL139",
+        "x": "FL",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM139",
+        "x": "FM",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN139",
+        "x": "FN",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO139",
+        "x": "FO",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP139",
+        "x": "FP",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ139",
+        "x": "FQ",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR139",
+        "x": "FR",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS139",
+        "x": "FS",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT139",
+        "x": "FT",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU139",
+        "x": "FU",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV139",
+        "x": "FV",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW139",
+        "x": "FW",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX139",
+        "x": "FX",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY139",
+        "x": "FY",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ139",
+        "x": "FZ",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA139",
+        "x": "GA",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB139",
+        "x": "GB",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC139",
+        "x": "GC",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD139",
+        "x": "GD",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE139",
+        "x": "GE",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF139",
+        "x": "GF",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG139",
+        "x": "GG",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH139",
+        "x": "GH",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI139",
+        "x": "GI",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ139",
+        "x": "GJ",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK139",
+        "x": "GK",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL139",
+        "x": "GL",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM139",
+        "x": "GM",
+        "y": 139,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM143",
+        "x": "GM",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL143",
+        "x": "GL",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK143",
+        "x": "GK",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI143",
+        "x": "GI",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ143",
+        "x": "GJ",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH143",
+        "x": "GH",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG143",
+        "x": "GG",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF143",
+        "x": "GF",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE143",
+        "x": "GE",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD143",
+        "x": "GD",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC143",
+        "x": "GC",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB143",
+        "x": "GB",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA143",
+        "x": "GA",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ143",
+        "x": "FZ",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY143",
+        "x": "FY",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX143",
+        "x": "FX",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW143",
+        "x": "FW",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV143",
+        "x": "FV",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU143",
+        "x": "FU",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT143",
+        "x": "FT",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS143",
+        "x": "FS",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR143",
+        "x": "FR",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ143",
+        "x": "FQ",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP143",
+        "x": "FP",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO143",
+        "x": "FO",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN143",
+        "x": "FN",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM143",
+        "x": "FM",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL143",
+        "x": "FL",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK143",
+        "x": "FK",
+        "y": 143,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK146",
+        "x": "FK",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL146",
+        "x": "FL",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM146",
+        "x": "FM",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN146",
+        "x": "FN",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO146",
+        "x": "FO",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP146",
+        "x": "FP",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ146",
+        "x": "FQ",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR146",
+        "x": "FR",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS146",
+        "x": "FS",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT146",
+        "x": "FT",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU146",
+        "x": "FU",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV146",
+        "x": "FV",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW146",
+        "x": "FW",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX146",
+        "x": "FX",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY146",
+        "x": "FY",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ146",
+        "x": "FZ",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA146",
+        "x": "GA",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB146",
+        "x": "GB",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC146",
+        "x": "GC",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD146",
+        "x": "GD",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE146",
+        "x": "GE",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF146",
+        "x": "GF",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG146",
+        "x": "GG",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH146",
+        "x": "GH",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI146",
+        "x": "GI",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ146",
+        "x": "GJ",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK146",
+        "x": "GK",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL146",
+        "x": "GL",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM146",
+        "x": "GM",
+        "y": 146,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA150",
+        "x": "GA",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB150",
+        "x": "GB",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC150",
+        "x": "GC",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD150",
+        "x": "GD",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE150",
+        "x": "GE",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF150",
+        "x": "GF",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG150",
+        "x": "GG",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH150",
+        "x": "GH",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI150",
+        "x": "GI",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ150",
+        "x": "GJ",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK150",
+        "x": "GK",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL150",
+        "x": "GL",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM150",
+        "x": "GM",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP150",
+        "x": "FP",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ150",
+        "x": "FQ",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR150",
+        "x": "FR",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS150",
+        "x": "FS",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT150",
+        "x": "FT",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU150",
+        "x": "FU",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV150",
+        "x": "FV",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW150",
+        "x": "FW",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX150",
+        "x": "FX",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY150",
+        "x": "FY",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ150",
+        "x": "FZ",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK150",
+        "x": "FK",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL150",
+        "x": "FL",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM150",
+        "x": "FM",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN150",
+        "x": "FN",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO150",
+        "x": "FO",
+        "y": 150,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN155",
+        "x": "FN",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO155",
+        "x": "FO",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP155",
+        "x": "FP",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ155",
+        "x": "FQ",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR155",
+        "x": "FR",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS155",
+        "x": "FS",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT155",
+        "x": "FT",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU155",
+        "x": "FU",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV155",
+        "x": "FV",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW155",
+        "x": "FW",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX155",
+        "x": "FX",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY155",
+        "x": "FY",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ155",
+        "x": "FZ",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA155",
+        "x": "GA",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB155",
+        "x": "GB",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC155",
+        "x": "GC",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD155",
+        "x": "GD",
+        "y": 155,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK171",
+        "x": "FK",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL171",
+        "x": "FL",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM171",
+        "x": "FM",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN171",
+        "x": "FN",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO171",
+        "x": "FO",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP171",
+        "x": "FP",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ171",
+        "x": "FQ",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR171",
+        "x": "FR",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS171",
+        "x": "FS",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT171",
+        "x": "FT",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU171",
+        "x": "FU",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV171",
+        "x": "FV",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW171",
+        "x": "FW",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX171",
+        "x": "FX",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY171",
+        "x": "FY",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ171",
+        "x": "FZ",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA171",
+        "x": "GA",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB171",
+        "x": "GB",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC171",
+        "x": "GC",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD171",
+        "x": "GD",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE171",
+        "x": "GE",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF171",
+        "x": "GF",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK174",
+        "x": "FK",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL174",
+        "x": "FL",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM174",
+        "x": "FM",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN174",
+        "x": "FN",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO174",
+        "x": "FO",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP174",
+        "x": "FP",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ174",
+        "x": "FQ",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR174",
+        "x": "FR",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS174",
+        "x": "FS",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT174",
+        "x": "FT",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU174",
+        "x": "FU",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV174",
+        "x": "FV",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW174",
+        "x": "FW",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX174",
+        "x": "FX",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY174",
+        "x": "FY",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ174",
+        "x": "FZ",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA174",
+        "x": "GA",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB174",
+        "x": "GB",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC174",
+        "x": "GC",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD174",
+        "x": "GD",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE174",
+        "x": "GE",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF174",
+        "x": "GF",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK178",
+        "x": "FK",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL178",
+        "x": "FL",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM178",
+        "x": "FM",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN178",
+        "x": "FN",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO178",
+        "x": "FO",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP178",
+        "x": "FP",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ178",
+        "x": "FQ",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR178",
+        "x": "FR",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS178",
+        "x": "FS",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT178",
+        "x": "FT",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU178",
+        "x": "FU",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV178",
+        "x": "FV",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW178",
+        "x": "FW",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX178",
+        "x": "FX",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY178",
+        "x": "FY",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ178",
+        "x": "FZ",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA178",
+        "x": "GA",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB178",
+        "x": "GB",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC178",
+        "x": "GC",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD178",
+        "x": "GD",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE178",
+        "x": "GE",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF178",
+        "x": "GF",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK181",
+        "x": "FK",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL181",
+        "x": "FL",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM181",
+        "x": "FM",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN181",
+        "x": "FN",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO181",
+        "x": "FO",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP181",
+        "x": "FP",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ181",
+        "x": "FQ",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR181",
+        "x": "FR",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS181",
+        "x": "FS",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT181",
+        "x": "FT",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU181",
+        "x": "FU",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV181",
+        "x": "FV",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW181",
+        "x": "FW",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX181",
+        "x": "FX",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY181",
+        "x": "FY",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ181",
+        "x": "FZ",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA181",
+        "x": "GA",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB181",
+        "x": "GB",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC181",
+        "x": "GC",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD181",
+        "x": "GD",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE181",
+        "x": "GE",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF181",
+        "x": "GF",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "FK185",
+        "x": "FK",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FL185",
+        "x": "FL",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FM185",
+        "x": "FM",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FN185",
+        "x": "FN",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FO185",
+        "x": "FO",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FP185",
+        "x": "FP",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FQ185",
+        "x": "FQ",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FR185",
+        "x": "FR",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FS185",
+        "x": "FS",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FT185",
+        "x": "FT",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FU185",
+        "x": "FU",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FV185",
+        "x": "FV",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FW185",
+        "x": "FW",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FX185",
+        "x": "FX",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FY185",
+        "x": "FY",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "FZ185",
+        "x": "FZ",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GA185",
+        "x": "GA",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GB185",
+        "x": "GB",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GC185",
+        "x": "GC",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GD185",
+        "x": "GD",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GE185",
+        "x": "GE",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GF185",
+        "x": "GF",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG171",
+        "x": "GG",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH171",
+        "x": "GH",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI171",
+        "x": "GI",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ171",
+        "x": "GJ",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK171",
+        "x": "GK",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL171",
+        "x": "GL",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM171",
+        "x": "GM",
+        "y": 171,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG174",
+        "x": "GG",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH174",
+        "x": "GH",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI174",
+        "x": "GI",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ174",
+        "x": "GJ",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK174",
+        "x": "GK",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL174",
+        "x": "GL",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM174",
+        "x": "GM",
+        "y": 174,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG178",
+        "x": "GG",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH178",
+        "x": "GH",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI178",
+        "x": "GI",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ178",
+        "x": "GJ",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK178",
+        "x": "GK",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL178",
+        "x": "GL",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM178",
+        "x": "GM",
+        "y": 178,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG181",
+        "x": "GG",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH181",
+        "x": "GH",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI181",
+        "x": "GI",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ181",
+        "x": "GJ",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK181",
+        "x": "GK",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL181",
+        "x": "GL",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM181",
+        "x": "GM",
+        "y": 181,
+        "type": "full_cab"
+      },
+      {
+        "id": "GG185",
+        "x": "GG",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GH185",
+        "x": "GH",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GI185",
+        "x": "GI",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GJ185",
+        "x": "GJ",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GK185",
+        "x": "GK",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GL185",
+        "x": "GL",
+        "y": 185,
+        "type": "full_cab"
+      },
+      {
+        "id": "GM185",
+        "x": "GM",
+        "y": 185,
+        "type": "full_cab"
+      }
+    ]
+  }
+]
 }

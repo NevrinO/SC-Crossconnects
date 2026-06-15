@@ -42,7 +42,27 @@ export function getCabType(loc: string, room: Room): CabinetInfo {
   // Strip port info (e.g., "FR132:1:5" -> "FR132") before suffix-based cabinet type detection
   const cabOnly = normalized.split(':')[0];
 
-  // Check against room's special cabinets
+  // First check the cabinets array (new format with explicit types)
+  if (room.cabinets) {
+    const cabinet = room.cabinets.find(c => c.id === cabOnly);
+    if (cabinet) {
+      // For network_rack, extract panel number from format "CABINET:PANEL:PORT"
+      if (cabinet.type === 'network_rack') {
+        const parts = normalized.split(':');
+        const panel = parts.length >= 2 ? parts[1] : '';
+        return { type: 'network_rack', value: panel };
+      }
+      // For half_cab and quarter_cab, extract suffix from cabinet ID
+      if (cabinet.type === 'half_cab' || cabinet.type === 'quarter_cab') {
+        const suffix = cabOnly.slice(-1);
+        return { type: cabinet.type, value: suffix };
+      }
+      // full_cab has no value
+      return { type: cabinet.type, value: '' };
+    }
+  }
+
+  // Fallback to specialCabinets for backward compatibility
   const { networkRacks, halfCabs, quarterCabs } = room.specialCabinets;
 
   // Check for network rack

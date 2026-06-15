@@ -327,16 +327,6 @@ export default function App() {
                     orientation={orientation}
                   />
                 )}
-                {showSegments && (
-                  <SegmentLayer
-                    bounds={bounds}
-                    cellSize={cellSize}
-                    orientation={orientation}
-                    segments={selectedRoom.pathSegments}
-                    selectedPathSegments={selectedPathSegments}
-                    cableType={cableType}
-                  />
-                )}
                 {showCabinets && (
                   <CabinetLayer
                     bounds={bounds}
@@ -347,6 +337,16 @@ export default function App() {
                     endCabinet={endCabinet}
                     highlightedCabinet={highlightedCabinet}
                     onCabinetClick={onCabinetClick}
+                  />
+                )}
+                {showSegments && (
+                  <SegmentLayer
+                    bounds={bounds}
+                    cellSize={cellSize}
+                    orientation={orientation}
+                    segments={selectedRoom.pathSegments}
+                    selectedPathSegments={selectedPathSegments}
+                    cableType={cableType}
                   />
                 )}
                 {showAnimation && selectedPathSegments && (

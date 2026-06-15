@@ -58,7 +58,7 @@ export function RoomMapContainer({
   const [showCabinets, setShowCabinets] = useState(true)
   const [showSegments, setShowSegments] = useState(true)
   const [showAnimation, setShowAnimation] = useState(true)
-  
+
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -81,6 +81,46 @@ export function RoomMapContainer({
 
   const xAxisCount = xAxisLabels.length
   const yAxisCount = yAxisLabels.length
+
+  // Calculate initial pan position based on startCorner
+  useEffect(() => {
+    if (!containerRef.current) return
+    const containerWidth = containerRef.current.clientWidth
+    const containerHeight = containerRef.current.clientHeight
+
+    // Calculate grid dimensions
+    const gridWidth = (xAxisCount + 2) * cellSize
+    const gridHeight = (yAxisCount + 2) * cellSize
+
+    let initialX = 0
+    let initialY = 0
+
+    // Adjust pan based on startCorner to show the appropriate part of the grid
+    switch (startCorner) {
+      case 'top-right':
+        initialX = containerWidth - gridWidth
+        break
+      case 'bottom-left':
+        initialY = containerHeight - gridHeight
+        break
+      case 'bottom-right':
+        initialX = containerWidth - gridWidth
+        initialY = containerHeight - gridHeight
+        break
+      case 'top-left':
+      default:
+        initialX = 0
+        initialY = 0
+    }
+
+    // Constrain to valid pan bounds
+    const maxX = containerWidth - gridWidth
+    const maxY = containerHeight - gridHeight
+    initialX = Math.max(maxX, Math.min(0, initialX))
+    initialY = Math.max(maxY, Math.min(0, initialY))
+
+    setPan({ x: initialX, y: initialY })
+  }, [room, startCorner, xAxisCount, yAxisCount, cellSize])
 
   // Calculate grid dimensions for SVG viewBox
   const gridWidth = (xAxisCount + 2) * cellSize
@@ -108,8 +148,8 @@ export function RoomMapContainer({
   const screenToGrid = (clientX: number, clientY: number): GridPoint | null => {
     if (!containerRef.current) return null
     const rect = containerRef.current.getBoundingClientRect()
-    const svgX = clientX - rect.left + containerRef.current.scrollLeft - pan.x
-    const svgY = clientY - rect.top + containerRef.current.scrollTop - pan.y
+    const svgX = clientX - rect.left - pan.x
+    const svgY = clientY - rect.top - pan.y
 
     const xIndex = Math.floor(svgX / cellSize) - 1
     const yIndex = yAxisCount - Math.floor(svgY / cellSize)
@@ -192,18 +232,21 @@ export function RoomMapContainer({
     // Feature 3: Keyboard shortcuts for map interaction
     if (e.key === '1') {
       // 1 — next click sets Start
+      e.preventDefault()
       setClickMode('start')
       return
     }
 
     if (e.key === '2') {
       // 2 — next click sets End
+      e.preventDefault()
       setClickMode('end')
       return
     }
 
     if (e.key === 'Escape') {
       // Esc — clear both Start and End
+      e.preventDefault()
       onSelectStart('')
       onSelectEnd('')
       setClickMode(null)
@@ -212,12 +255,14 @@ export function RoomMapContainer({
 
     if (e.key === 'Enter') {
       // Enter — trigger Calculate
+      e.preventDefault()
       onCalculate()
       return
     }
 
     if (e.key === 'x' || e.key === 'X') {
       // X — swap Start and End
+      e.preventDefault()
       const temp = startCabinet
       onSelectStart(endCabinet || '')
       onSelectEnd(temp || '')
@@ -226,40 +271,43 @@ export function RoomMapContainer({
 
     // Navigation shortcuts
     if (e.key === 'e' || e.key === 'E') {
+      e.preventDefault()
       handleZoomIn()
       return
     }
 
     if (e.key === 'q' || e.key === 'Q') {
+      e.preventDefault()
       handleZoomOut()
       return
     }
 
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
       e.preventDefault()
-      setPan(p => ({ ...p, y: p.y + 50 }))
+      setPan(p => ({ ...p, y: Math.min(0, p.y + 50) }))
       return
     }
 
     if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
       e.preventDefault()
-      setPan(p => ({ ...p, y: p.y - 50 }))
+      setPan(p => ({ ...p, y: Math.max(containerRef.current?.clientHeight ?? 0 - gridHeight, p.y - 50) }))
       return
     }
 
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
       e.preventDefault()
-      setPan(p => ({ ...p, x: p.x + 50 }))
+      setPan(p => ({ ...p, x: Math.min(0, p.x + 50) }))
       return
     }
 
     if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
       e.preventDefault()
-      setPan(p => ({ ...p, x: p.x - 50 }))
+      setPan(p => ({ ...p, x: Math.max(containerRef.current?.clientWidth ?? 0 - gridWidth, p.x - 50) }))
       return
     }
 
     if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault()
       handleResetZoom()
       return
     }
@@ -294,7 +342,14 @@ export function RoomMapContainer({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
-      setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
+      const newX = e.clientX - dragStart.x
+      const newY = e.clientY - dragStart.y
+      const maxX = (containerRef.current?.clientWidth ?? 0) - gridWidth
+      const maxY = (containerRef.current?.clientHeight ?? 0) - gridHeight
+      setPan({
+        x: Math.max(maxX, Math.min(0, newX)),
+        y: Math.max(maxY, Math.min(0, newY))
+      })
     }
   }
 
@@ -340,7 +395,7 @@ export function RoomMapContainer({
 
       <div
         ref={containerRef}
-        className="flex-1 border border-gray-300 rounded overflow-auto bg-white cursor-crosshair relative"
+        className="flex-1 border border-gray-300 rounded overflow-hidden bg-white cursor-crosshair relative"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

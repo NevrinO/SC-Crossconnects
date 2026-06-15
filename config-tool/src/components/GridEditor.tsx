@@ -38,6 +38,9 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
   const [measurementFinished, setMeasurementFinished] = useState(false)
   const [cabinetPlacementMode, setCabinetPlacementMode] = useState(false)
   const [cabinetPopover, setCabinetPopover] = useState<{ x: number; y: number; point: GridPoint } | null>(null)
+  const [isDraggingRow, setIsDraggingRow] = useState(false)
+  const [rowStartPoint, setRowStartPoint] = useState<GridPoint | null>(null)
+  const [rowEndPoint, setRowEndPoint] = useState<GridPoint | null>(null)
   const [undoStack, setUndoStack] = useState<Room[]>([])
   const [redoStack, setRedoStack] = useState<Room[]>([])
   const svgRef = useRef<SVGSVGElement>(null)
@@ -91,9 +94,8 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
   const screenToGrid = (clientX: number, clientY: number): GridPoint | null => {
     if (!containerRef.current) return null
     const rect = containerRef.current.getBoundingClientRect()
-    // Account for container scroll position so coordinates are correct when scrolled
-    const svgX = clientX - rect.left + containerRef.current.scrollLeft - pan.x
-    const svgY = clientY - rect.top + containerRef.current.scrollTop - pan.y
+    const svgX = clientX - rect.left - pan.x
+    const svgY = clientY - rect.top - pan.y
 
     const xIndex = Math.floor(svgX / cellSize) - 1
     const yIndex = yAxisCount - Math.floor(svgY / cellSize)
@@ -188,9 +190,18 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
       return
     }
 
-    // Cabinet placement mode: click to add/remove cabinets
+    // Cabinet placement mode: click to add/remove cabinets or drag to create row
     if (cabinetPlacementMode) {
-      handleCabinetClick(gridPoint, e.clientX, e.clientY)
+      const existing = getCabinetAtPoint(gridPoint)
+      if (existing) {
+        // Show popover to change type or remove
+        handleCabinetClick(gridPoint, e.clientX, e.clientY)
+      } else {
+        // Start row drag to create cabinets
+        setIsDraggingRow(true)
+        setRowStartPoint(gridPoint)
+        setRowEndPoint(gridPoint)
+      }
       return
     }
 
@@ -267,8 +278,24 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDraggingRow && rowStartPoint) {
+      // Update row end point during drag
+      const gridPoint = screenToGrid(e.clientX, e.clientY)
+      if (gridPoint) {
+        setRowEndPoint(gridPoint)
+      }
+      return
+    }
+
     if (isDragging) {
-      setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
+      const newX = e.clientX - dragStart.x
+      const newY = e.clientY - dragStart.y
+      const maxX = (containerRef.current?.clientWidth ?? 0) - gridWidth
+      const maxY = (containerRef.current?.clientHeight ?? 0) - gridHeight
+      setPan({
+        x: Math.max(maxX, Math.min(0, newX)),
+        y: Math.max(maxY, Math.min(0, newY))
+      })
       return
     }
     // Update hover point for live preview line
@@ -277,6 +304,51 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
   }
 
   const handleMouseUp = () => {
+    if (isDraggingRow && rowStartPoint && rowEndPoint) {
+      // Create cabinets in the row range
+      const cabinets = room.cabinets || []
+      const newCabinets: Cabinet[] = []
+
+      // Determine the range between start and end points
+      const startX = bounds.xLabels.indexOf(rowStartPoint.x)
+      const startY = bounds.yLabels.indexOf(rowStartPoint.y)
+      const endX = bounds.xLabels.indexOf(rowEndPoint.x)
+      const endY = bounds.yLabels.indexOf(rowEndPoint.y)
+
+      const minX = Math.min(startX, endX)
+      const maxX = Math.max(startX, endX)
+      const minY = Math.min(startY, endY)
+      const maxY = Math.max(startY, endY)
+
+      // Create cabinets for each cell in the range
+      for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+          const gridX = bounds.xLabels[x]
+          const gridY = bounds.yLabels[y]
+          const existing = cabinets.find(c => c.x === gridX && c.y === gridY)
+          if (!existing) {
+            newCabinets.push({
+              id: `${gridX}${gridY}`,
+              x: gridX,
+              y: gridY,
+              type: 'full_cab'
+            })
+          }
+        }
+      }
+
+      if (newCabinets.length > 0 && onCabinetChange) {
+        // Push to undo stack before making changes
+        setUndoStack(prev => [...prev.slice(-49), JSON.parse(JSON.stringify(room))])
+        setRedoStack([])
+        onCabinetChange([...cabinets, ...newCabinets])
+      }
+
+      setIsDraggingRow(false)
+      setRowStartPoint(null)
+      setRowEndPoint(null)
+      return
+    }
     setIsDragging(false)
   }
 
@@ -391,25 +463,25 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
 
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
       e.preventDefault()
-      setPan(p => ({ ...p, y: p.y + 50 }))
+      setPan(p => ({ ...p, y: Math.min(0, p.y + 50) }))
       return
     }
 
     if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
       e.preventDefault()
-      setPan(p => ({ ...p, y: p.y - 50 }))
+      setPan(p => ({ ...p, y: Math.max((containerRef.current?.clientHeight ?? 0) - gridHeight, p.y - 50) }))
       return
     }
 
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
       e.preventDefault()
-      setPan(p => ({ ...p, x: p.x + 50 }))
+      setPan(p => ({ ...p, x: Math.min(0, p.x + 50) }))
       return
     }
 
     if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
       e.preventDefault()
-      setPan(p => ({ ...p, x: p.x - 50 }))
+      setPan(p => ({ ...p, x: Math.max((containerRef.current?.clientWidth ?? 0) - gridWidth, p.x - 50) }))
       return
     }
 
@@ -444,6 +516,14 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
       setShowShortcutDialog(!showShortcutDialog)
       return
     }
+
+    if (e.key === ' ') {
+      e.preventDefault()
+      if (showCreateButton) {
+        handleCreateSegment()
+      }
+      return
+    }
   }
 
   const handleContextMenu = (e: React.MouseEvent, segment: PathSegment) => {
@@ -454,8 +534,8 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
     if (!container) return
     const rect = container.getBoundingClientRect()
     setContextMenu({
-      x: e.clientX - rect.left + container.scrollLeft,
-      y: e.clientY - rect.top + container.scrollTop,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
       segment
     })
   }
@@ -520,8 +600,8 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
         setCabinetPopover({
-          x: clientX - rect.left + containerRef.current.scrollLeft,
-          y: clientY - rect.top + containerRef.current.scrollTop,
+          x: clientX - rect.left,
+          y: clientY - rect.top,
           point
         })
       }
@@ -774,7 +854,7 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
 
       <div
         ref={containerRef}
-        className="border border-gray-300 rounded overflow-auto cursor-crosshair relative"
+        className="border border-gray-300 rounded overflow-hidden cursor-crosshair relative"
         style={{ height: '792px' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -813,6 +893,26 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
                   const cabinet = getCabinetAtPoint({ x: gridX, y: gridY })
                   const colors = cabinet ? getCabinetColor(cabinet.type) : null
 
+                  // Check if this cell is in the row selection range
+                  let isInRowSelection = false
+                  if (isDraggingRow && rowStartPoint && rowEndPoint) {
+                    // Compare actual grid coordinates, not display indices
+                    const startX = bounds.xLabels.indexOf(rowStartPoint.x)
+                    const startY = bounds.yLabels.indexOf(rowStartPoint.y)
+                    const endX = bounds.xLabels.indexOf(rowEndPoint.x)
+                    const endY = bounds.yLabels.indexOf(rowEndPoint.y)
+
+                    const minX = Math.min(startX, endX)
+                    const maxX = Math.max(startX, endX)
+                    const minY = Math.min(startY, endY)
+                    const maxY = Math.max(startY, endY)
+
+                    const currentX = bounds.xLabels.indexOf(gridX)
+                    const currentY = bounds.yLabels.indexOf(gridY)
+
+                    isInRowSelection = currentX >= minX && currentX <= maxX && currentY >= minY && currentY <= maxY
+                  }
+
                   return (
                     <g key={`${xIndex}-${yIndex}`}>
                       <rect
@@ -820,11 +920,12 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDe
                         y={(yAxisCount - yIndex) * cellSize}
                         width={cellSize}
                         height={cellSize}
-                        fill={colors?.fill || 'white'}
-                        stroke={colors?.stroke || '#e5e7eb'}
-                        strokeWidth={cabinet ? 2 : 1}
+                        fill={isInRowSelection ? '#dbeafe' : (colors?.fill || 'white')}
+                        stroke={isInRowSelection ? '#2563eb' : (colors?.stroke || '#e5e7eb')}
+                        strokeWidth={isInRowSelection ? 3 : (cabinet ? 2 : 1)}
+                        strokeDasharray={isInRowSelection ? '4 2' : 'none'}
                       />
-                      {cabinet && cabinetPlacementMode && colors && (
+                      {cabinet && cabinetPlacementMode && colors && !isInRowSelection && (
                         <rect
                           x={(xIndex + 1) * cellSize + 4 * zoom}
                           y={(yAxisCount - yIndex) * cellSize + 4 * zoom}
