@@ -20,11 +20,11 @@ function nodeId(point: GridPoint): string {
 
 function segmentDistance(segment: PathSegment, tileSize: number, coordinateFormat: CoordinateFormat): number {
   if (segment.start.x === segment.end.x) {
-    // Horizontal segment (same X, different Y)
+    // Vertical segment (same X, different Y - north/south)
     return Math.abs(segment.end.y - segment.start.y) * tileSize;
   }
   if (segment.start.y === segment.end.y) {
-    // Vertical segment (same Y, different X)
+    // Horizontal segment (same Y, different X - east/west)
     return calculateXDistance(segment.start.x, segment.end.x, tileSize, coordinateFormat);
   }
   // Diagonal (shouldn't happen with grid-aligned paths)
@@ -349,5 +349,9 @@ export class PathGraph {
    */
   getActiveEdges(): GraphEdge[] {
     return this.edges.filter(edge => !this.removedEdgeIds.has(edge.id));
+  }
+
+  getNodes(): Map<string, GraphNode> {
+    return this.nodes;
   }
 }

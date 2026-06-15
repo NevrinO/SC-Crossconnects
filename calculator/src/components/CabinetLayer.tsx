@@ -41,8 +41,14 @@ export function CabinetLayer({
     }
   }
 
+  const rectSize = cellSize * 0.8
+  const offset = (cellSize - rectSize) / 2
+  const hoverTargetSize = cellSize * 1.2
+  const hoverOffset = (cellSize - hoverTargetSize) / 2
+
   return (
     <g>
+      {/* Render all cabinets first */}
       {cabinets.map(cabinet => {
         const screenPos = gridToScreen({ x: cabinet.x, y: cabinet.y }, bounds, cellSize, orientation)
         if (!screenPos) return null
@@ -53,11 +59,24 @@ export function CabinetLayer({
         const isHovered = hoveredCabinet === cabinet.id
         const isHighlighted = highlightedCabinet === cabinet.id
 
-        const rectSize = cellSize * 0.8
-        const offset = (cellSize - rectSize) / 2
-
         return (
           <g key={cabinet.id}>
+            {/* Invisible larger hover target for easier mouseover */}
+            <rect
+              x={screenPos.x + hoverOffset}
+              y={screenPos.y + hoverOffset}
+              width={hoverTargetSize}
+              height={hoverTargetSize}
+              fill="transparent"
+              style={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onCabinetClick(cabinet.id)
+              }}
+              onMouseEnter={() => setHoveredCabinet(cabinet.id)}
+              onMouseLeave={() => setHoveredCabinet(null)}
+            />
+
             {/* Cabinet rectangle */}
             <rect
               x={screenPos.x + offset}
@@ -68,13 +87,7 @@ export function CabinetLayer({
               stroke={colors.stroke}
               strokeWidth={isHovered ? 2 : 1}
               rx={2}
-              style={{ cursor: 'pointer' }}
-              onClick={(e) => {
-                e.stopPropagation()
-                onCabinetClick(cabinet.id)
-              }}
-              onMouseEnter={() => setHoveredCabinet(cabinet.id)}
-              onMouseLeave={() => setHoveredCabinet(null)}
+              pointerEvents="none"
             />
 
             {/* Start cabinet ring */}
@@ -88,6 +101,7 @@ export function CabinetLayer({
                 stroke="#2563eb"
                 strokeWidth={3}
                 rx={3}
+                pointerEvents="none"
               />
             )}
 
@@ -102,6 +116,7 @@ export function CabinetLayer({
                 stroke="#16a34a"
                 strokeWidth={3}
                 rx={3}
+                pointerEvents="none"
               />
             )}
 
@@ -117,47 +132,57 @@ export function CabinetLayer({
                 strokeWidth={4}
                 rx={4}
                 style={{ animation: 'pulse 1s ease-in-out infinite' }}
+                pointerEvents="none"
               />
-            )}
-
-            {/* Tooltip */}
-            {isHovered && (
-              <g>
-                <rect
-                  x={screenPos.x + cellSize / 2}
-                  y={screenPos.y - 10}
-                  width={100}
-                  height={36}
-                  fill="#1f2937"
-                  rx={4}
-                  opacity={0.9}
-                />
-                <text
-                  x={screenPos.x + cellSize / 2 + 50}
-                  y={screenPos.y - 2}
-                  textAnchor="middle"
-                  fontSize={11}
-                  fill="white"
-                  dominantBaseline="middle"
-                  fontWeight="bold"
-                >
-                  {cabinet.id}
-                </text>
-                <text
-                  x={screenPos.x + cellSize / 2 + 50}
-                  y={screenPos.y + 12}
-                  textAnchor="middle"
-                  fontSize={10}
-                  fill="#9ca3af"
-                  dominantBaseline="middle"
-                >
-                  {cabinet.type.replace('_', ' ')}
-                </text>
-              </g>
             )}
           </g>
         )
       })}
+
+      {/* Render tooltips after all cabinets so they're always on top */}
+      {hoveredCabinet && (() => {
+        const cabinet = cabinets.find(c => c.id === hoveredCabinet)
+        if (!cabinet) return null
+        const screenPos = gridToScreen({ x: cabinet.x, y: cabinet.y }, bounds, cellSize, orientation)
+        if (!screenPos) return null
+
+        return (
+          <g key={`tooltip-${cabinet.id}`}>
+            <rect
+              x={screenPos.x + cellSize / 2}
+              y={screenPos.y - 10}
+              width={100}
+              height={36}
+              fill="#1f2937"
+              rx={4}
+              opacity={0.95}
+            />
+            <text
+              x={screenPos.x + cellSize / 2 + 50}
+              y={screenPos.y - 2}
+              textAnchor="middle"
+              fontSize={11}
+              fill="white"
+              dominantBaseline="middle"
+              fontWeight="bold"
+              pointerEvents="none"
+            >
+              {cabinet.id}
+            </text>
+            <text
+              x={screenPos.x + cellSize / 2 + 50}
+              y={screenPos.y + 12}
+              textAnchor="middle"
+              fontSize={10}
+              fill="#9ca3af"
+              dominantBaseline="middle"
+              pointerEvents="none"
+            >
+              {cabinet.type.replace('_', ' ')}
+            </text>
+          </g>
+        )
+      })()}
     </g>
   )
 }

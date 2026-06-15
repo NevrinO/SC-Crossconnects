@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react'
 import { Room, GridPoint } from '../types/room'
 import { calculateGridBounds } from '../lib/grid-utils'
+import { MapControls } from './MapControls'
 
 interface RoomMapContainerProps {
   room: Room
@@ -27,10 +28,12 @@ interface RoomMapContainerProps {
     showCabinets: boolean
     showSegments: boolean
     showAnimation: boolean
+    showPathTooltips: boolean
     onToggleGrid: () => void
     onToggleCabinets: () => void
     onToggleSegments: () => void
     onToggleAnimation: () => void
+    onTogglePathTooltips: () => void
   }) => ReactNode
 }
 
@@ -58,6 +61,7 @@ export function RoomMapContainer({
   const [showCabinets, setShowCabinets] = useState(true)
   const [showSegments, setShowSegments] = useState(true)
   const [showAnimation, setShowAnimation] = useState(true)
+  const [showPathTooltips, setShowPathTooltips] = useState(false)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -465,13 +469,30 @@ export function RoomMapContainer({
               showCabinets,
               showSegments,
               showAnimation,
+              showPathTooltips,
               onToggleGrid: () => setShowGrid(!showGrid),
               onToggleCabinets: () => setShowCabinets(!showCabinets),
               onToggleSegments: () => setShowSegments(!showSegments),
               onToggleAnimation: () => setShowAnimation(!showAnimation),
+              onTogglePathTooltips: () => setShowPathTooltips(!showPathTooltips),
             })}
           </g>
         </svg>
+        <div className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded shadow">
+          <MapControls
+            onJumpToCabinet={handleJumpToCabinet}
+            onToggleGrid={() => setShowGrid(!showGrid)}
+            onToggleCabinets={() => setShowCabinets(!showCabinets)}
+            onToggleSegments={() => setShowSegments(!showSegments)}
+            onToggleAnimation={() => setShowAnimation(!showAnimation)}
+            onTogglePathTooltips={() => setShowPathTooltips(!showPathTooltips)}
+            showGrid={showGrid}
+            showCabinets={showCabinets}
+            showSegments={showSegments}
+            showAnimation={showAnimation}
+            showPathTooltips={showPathTooltips}
+          />
+        </div>
       </div>
     </div>
   )

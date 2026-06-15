@@ -6,10 +6,12 @@ interface MapControlsProps {
   onToggleCabinets: () => void
   onToggleSegments: () => void
   onToggleAnimation: () => void
+  onTogglePathTooltips: () => void
   showGrid: boolean
   showCabinets: boolean
   showSegments: boolean
   showAnimation: boolean
+  showPathTooltips: boolean
 }
 
 export function MapControls({
@@ -18,10 +20,12 @@ export function MapControls({
   onToggleCabinets,
   onToggleSegments,
   onToggleAnimation,
+  onTogglePathTooltips,
   showGrid,
   showCabinets,
   showSegments,
   showAnimation,
+  showPathTooltips,
 }: MapControlsProps) {
   const [searchValue, setSearchValue] = useState('')
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -90,6 +94,15 @@ export function MapControls({
             className="rounded"
           />
           Animation
+        </label>
+        <label className="flex items-center gap-1 text-sm">
+          <input
+            type="checkbox"
+            checked={showPathTooltips}
+            onChange={onTogglePathTooltips}
+            className="rounded"
+          />
+          Path Tooltips
         </label>
       </div>
 

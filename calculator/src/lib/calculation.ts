@@ -2,6 +2,7 @@ import type { Room, PathSegment, CalculationResult, CabinetInfo } from '../types
 import type { PathResult } from './pathfinding';
 import { CONSTANTS } from './constants';
 import { calculateXDistance } from './char-utils';
+import roomsData from '../data/rooms.json';
 
 function cabRangeCheck(aRange: string, zRange: string, value: string): boolean {
   const row = value.slice(0, 2);
@@ -22,9 +23,14 @@ function cabRangeCheck(aRange: string, zRange: string, value: string): boolean {
 }
 
 export function getRoom(loc: string): string | null {
-  if (cabRangeCheck('CT105', 'EW129', loc)) return '10';
-  if (cabRangeCheck('FJ132', 'GN185', loc)) return '14';
-  if (cabRangeCheck('HM085', 'IV152', loc)) return '28';
+  for (const room of roomsData.rooms) {
+    const { start, end } = room.xyRange;
+    const startLoc = `${start.x}${start.y}`;
+    const endLoc = `${end.x}${end.y}`;
+    if (cabRangeCheck(startLoc, endLoc, loc)) {
+      return room.id;
+    }
+  }
   return null;
 }
 

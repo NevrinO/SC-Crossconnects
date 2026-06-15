@@ -10,6 +10,7 @@ interface SegmentLayerProps {
   segments: PathSegment[]
   selectedPathSegments?: PathSegment[]
   cableType?: 'fiber' | 'copper' | null
+  showPathTooltips?: boolean
 }
 
 export function SegmentLayer({
@@ -19,6 +20,7 @@ export function SegmentLayer({
   segments,
   selectedPathSegments = [],
   cableType,
+  showPathTooltips = false,
 }: SegmentLayerProps) {
   const [hoveredSegment, setHoveredSegment] = useState<PathSegment | null>(null)
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
@@ -140,7 +142,7 @@ export function SegmentLayer({
           )
         })}
       </g>
-      {hoveredSegment && mousePos && createPortal(
+      {hoveredSegment && mousePos && showPathTooltips && createPortal(
         <div
           style={{
             position: 'fixed',

@@ -7,6 +7,7 @@ interface PathAnimationLayerProps {
   cellSize: number
   orientation: 'numbers-vertical' | 'numbers-horizontal'
   selectedPathSegments: PathSegment[]
+  selectedPathNodes?: string[]
   visible: boolean
 }
 
@@ -15,21 +16,38 @@ export function PathAnimationLayer({
   cellSize,
   orientation,
   selectedPathSegments,
+  selectedPathNodes,
   visible,
 }: PathAnimationLayerProps) {
-  // Build polyline path string from selected segments
+  // Build polyline path string from actual traversed nodes (includes midpoints)
   const pathData = useMemo(() => {
-    if (selectedPathSegments.length === 0) return ''
-    return selectedPathSegments
-      .map(segment => {
-        const startPos = gridToScreenCenter(segment.start, bounds, cellSize, orientation)
-        const endPos = gridToScreenCenter(segment.end, bounds, cellSize, orientation)
-        if (!startPos || !endPos) return null
-        return `M ${startPos.x} ${startPos.y} L ${endPos.x} ${endPos.y}`
-      })
-      .filter(Boolean)
-      .join(' ')
-  }, [selectedPathSegments, bounds, cellSize, orientation])
+    if (selectedPathNodes && selectedPathNodes.length > 0) {
+      // Use nodes array for accurate path (includes cabinet entry midpoints)
+      return selectedPathNodes
+        .map(nodeId => {
+          const [x, y] = nodeId.split('-')
+          const gridPoint = { x, y: Number(y) }
+          const screenPos = gridToScreenCenter(gridPoint, bounds, cellSize, orientation)
+          if (!screenPos) return null
+          return `${screenPos.x} ${screenPos.y}`
+        })
+        .filter(Boolean)
+        .join(' L ')
+        .replace(/^/, 'M ')
+    } else if (selectedPathSegments.length > 0) {
+      // Fallback to segment endpoints if nodes not available
+      return selectedPathSegments
+        .map(segment => {
+          const startPos = gridToScreenCenter(segment.start, bounds, cellSize, orientation)
+          const endPos = gridToScreenCenter(segment.end, bounds, cellSize, orientation)
+          if (!startPos || !endPos) return null
+          return `M ${startPos.x} ${startPos.y} L ${endPos.x} ${endPos.y}`
+        })
+        .filter(Boolean)
+        .join(' ')
+    }
+    return ''
+  }, [selectedPathNodes, selectedPathSegments, bounds, cellSize, orientation])
 
   // Use pathData as key to force re-render and restart animation
   if (!visible || !pathData) return null

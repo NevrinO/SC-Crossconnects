@@ -1,4 +1,3 @@
-import type { PathSegment } from '../types/room';
 import type { PathResult } from '../lib/pathfinding';
 
 interface PathSelectorProps {
@@ -7,16 +6,6 @@ interface PathSelectorProps {
   onSelect: (path: PathResult) => void;
   isCalculating: boolean;
   error: string | null;
-}
-
-/**
- * Returns the most descriptive segment for a path — the cross-row (vertical) segment
- * if one exists, otherwise the first segment. This is the one that tells the tech
- * which physical tray column to use.
- */
-function primarySegment(segments: PathSegment[]): PathSegment {
-  const vertical = segments.find(s => s.start.x === s.end.x);
-  return vertical ?? segments[0];
 }
 
 export default function PathSelector({ paths, selectedPath, onSelect, isCalculating, error }: PathSelectorProps) {
@@ -37,7 +26,6 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
       {!isCalculating && !error && paths.length > 0 && (
         <div className="rounded-md border border-gray-300 bg-white">
           {paths.map((path, index) => {
-            const primary = primarySegment(path.segments);
             const isSelected = selectedPath === path;
             return (
               <div
@@ -56,9 +44,9 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
                     className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500"
                   />
                   <div className="flex-1 min-w-0">
-                    {/* Primary path identifier — the tray the tech physically uses */}
+                    {/* Primary path identifier — start and end cabinets */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-gray-900">{primary.name}</span>
+                      <span className="text-sm font-semibold text-gray-900">{path.nodes[0].replace('-', '')} → {path.nodes[path.nodes.length - 1].replace('-', '')}</span>
                       <span className="text-sm font-medium text-gray-700">~{Math.ceil(path.totalDistance)}ft</span>
                       {path.isShortest && (
                         <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">shortest</span>

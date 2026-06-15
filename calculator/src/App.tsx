@@ -21,7 +21,6 @@ import { GridLayer } from './components/GridLayer';
 import { CabinetLayer } from './components/CabinetLayer';
 import { SegmentLayer } from './components/SegmentLayer';
 import { PathAnimationLayer } from './components/PathAnimationLayer';
-import { MapControls } from './components/MapControls';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -38,7 +37,7 @@ export default function App() {
     initializeSessionCleanup();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions' | 'roommap'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions'>('manual');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [startCabinet, setStartCabinet] = useState('');
   const [endCabinet, setEndCabinet] = useState('');
@@ -107,12 +106,12 @@ export default function App() {
     setCableType(firstResult.cableType);
     setError(null);
 
-    // Switch to the Room Map tab
-    setActiveTab('roommap');
+    // Switch to the Manual Calculation tab (map is now embedded there)
+    setActiveTab('manual');
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-7xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
         <div className="flex space-x-4">
@@ -168,19 +167,6 @@ export default function App() {
           }`}
         >
           Saved Sessions
-        </button>
-        <button
-          onClick={() => setActiveTab('roommap')}
-          disabled={!selectedRoom}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === 'roommap'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : !selectedRoom
-              ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Room Map
         </button>
       </div>
 
@@ -254,6 +240,67 @@ export default function App() {
             />
           </div>
 
+          {/* Room Map - only shows when a room is selected */}
+          {selectedRoom && (
+            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" style={{ height: '600px', minHeight: '600px' }}>
+              <RoomMapContainer
+                room={selectedRoom}
+                startCabinet={startCabinet}
+                endCabinet={endCabinet}
+                selectedPathSegments={selectedPath?.segments}
+                cableType={cableType}
+                onSelectStart={setStartCabinet}
+                onSelectEnd={setEndCabinet}
+                onCalculate={handleCalculate}
+              >
+                {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, showGrid, showCabinets, showSegments, showAnimation, showPathTooltips }) => (
+                  <>
+                    {showGrid && (
+                      <GridLayer
+                        bounds={bounds}
+                        cellSize={cellSize}
+                        orientation={orientation}
+                      />
+                    )}
+                    {showCabinets && (
+                      <CabinetLayer
+                        bounds={bounds}
+                        cellSize={cellSize}
+                        orientation={orientation}
+                        cabinets={selectedRoom.cabinets || []}
+                        startCabinet={startCabinet}
+                        endCabinet={endCabinet}
+                        highlightedCabinet={highlightedCabinet}
+                        onCabinetClick={onCabinetClick}
+                      />
+                    )}
+                    {showSegments && (
+                      <SegmentLayer
+                        bounds={bounds}
+                        cellSize={cellSize}
+                        orientation={orientation}
+                        segments={selectedRoom.pathSegments}
+                        selectedPathSegments={selectedPathSegments}
+                        cableType={cableType}
+                        showPathTooltips={showPathTooltips}
+                      />
+                    )}
+                    {showAnimation && selectedPathSegments && (
+                      <PathAnimationLayer
+                        bounds={bounds}
+                        cellSize={cellSize}
+                        orientation={orientation}
+                        selectedPathSegments={selectedPathSegments}
+                        selectedPathNodes={selectedPath?.nodes}
+                        visible={showAnimation}
+                      />
+                    )}
+                  </>
+                )}
+              </RoomMapContainer>
+            </div>
+          )}
+
           <ResultsTable results={results} />
 
           {results.length > 0 && (
@@ -293,75 +340,6 @@ export default function App() {
           onLoadSession={(sessionResults) => setResults(sessionResults)}
           onViewOnMap={handleViewOnMap}
         />
-      )}
-
-      {activeTab === 'roommap' && selectedRoom && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" style={{ height: 'calc(100vh - 200px)', minHeight: '600px' }}>
-          <RoomMapContainer
-            room={selectedRoom}
-            startCabinet={startCabinet}
-            endCabinet={endCabinet}
-            selectedPathSegments={selectedPath?.segments}
-            cableType={cableType}
-            onSelectStart={setStartCabinet}
-            onSelectEnd={setEndCabinet}
-            onCalculate={handleCalculate}
-          >
-            {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, onJumpToCabinet, showGrid, showCabinets, showSegments, showAnimation, onToggleGrid, onToggleCabinets, onToggleSegments, onToggleAnimation }) => (
-              <>
-                <MapControls
-                  onJumpToCabinet={onJumpToCabinet}
-                  onToggleGrid={onToggleGrid}
-                  onToggleCabinets={onToggleCabinets}
-                  onToggleSegments={onToggleSegments}
-                  onToggleAnimation={onToggleAnimation}
-                  showGrid={showGrid}
-                  showCabinets={showCabinets}
-                  showSegments={showSegments}
-                  showAnimation={showAnimation}
-                />
-                {showGrid && (
-                  <GridLayer
-                    bounds={bounds}
-                    cellSize={cellSize}
-                    orientation={orientation}
-                  />
-                )}
-                {showCabinets && (
-                  <CabinetLayer
-                    bounds={bounds}
-                    cellSize={cellSize}
-                    orientation={orientation}
-                    cabinets={selectedRoom.cabinets || []}
-                    startCabinet={startCabinet}
-                    endCabinet={endCabinet}
-                    highlightedCabinet={highlightedCabinet}
-                    onCabinetClick={onCabinetClick}
-                  />
-                )}
-                {showSegments && (
-                  <SegmentLayer
-                    bounds={bounds}
-                    cellSize={cellSize}
-                    orientation={orientation}
-                    segments={selectedRoom.pathSegments}
-                    selectedPathSegments={selectedPathSegments}
-                    cableType={cableType}
-                  />
-                )}
-                {showAnimation && selectedPathSegments && (
-                  <PathAnimationLayer
-                    bounds={bounds}
-                    cellSize={cellSize}
-                    orientation={orientation}
-                    selectedPathSegments={selectedPathSegments}
-                    visible={showAnimation}
-                  />
-                )}
-              </>
-            )}
-          </RoomMapContainer>
-        </div>
       )}
     </div>
   );

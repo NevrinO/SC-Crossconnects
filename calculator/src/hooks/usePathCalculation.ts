@@ -76,13 +76,12 @@ export function usePathCalculation(
         endU,
         cableType,
         room,
-        5, // k=5 paths
-        1.5 // max 150% of shortest
+        10, // k=10 paths to find more alternatives
+        3.0 // max 300% of shortest (show more alternatives)
       );
 
       // If no paths found (e.g., cross-row routing at same position), fall back to single shortest path
       if (calculatedPaths.length === 0) {
-        console.log('usePathCalculation: No k-shortest paths found, trying fallback to findShortestPath');
         const singlePath = findShortestPath(
           startGridPoint,
           startU,
@@ -92,10 +91,8 @@ export function usePathCalculation(
           room
         );
         if (singlePath) {
-          console.log('usePathCalculation: Fallback path found:', singlePath);
           calculatedPaths = [singlePath];
         } else {
-          console.log('usePathCalculation: No fallback path found either');
           // Provide specific error message based on room data
           if (!room.pathSegments || room.pathSegments.length === 0) {
             if (isMounted) {
@@ -120,11 +117,9 @@ export function usePathCalculation(
       }
 
       if (isMounted) {
-        console.log('usePathCalculation: Setting paths:', calculatedPaths.length);
         setPaths(calculatedPaths);
         // Auto-select the shortest path
         if (calculatedPaths.length > 0) {
-          console.log('usePathCalculation: Auto-selecting path with segments:', calculatedPaths[0].segments.length);
           setSelectedPath(calculatedPaths[0]);
         } else {
           // No paths found - clear selection but don't show error

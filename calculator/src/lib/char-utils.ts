@@ -5,7 +5,7 @@ import type { CoordinateFormat } from '../types/room';
  * AA=1, AB=2, ..., ZZ=676
  * O(1) time complexity.
  */
-function lettersToNumber(x: string): number {
+export function lettersToNumber(x: string): number {
   if (x.length !== 2) {
     throw new Error(`X coordinate must be 2 letters, got: ${x}`);
   }
