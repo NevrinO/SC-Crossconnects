@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Room } from '../types/editor'
 import { validateRoomStructure } from '../lib/validation'
 
@@ -19,10 +19,15 @@ const MAX_FILE_SIZE = 1024 * 1024 // 1MB
 
 export function useRoomImport(
   onImportFullRooms: (rooms: Room[]) => void,
-  onImportSingleRoom: (room: Room) => void
+  onImportSingleRoom: (room: Room) => void,
+  existingRooms: Room[] = []
 ): UseRoomImportReturn {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const existingRoomsRef = useRef(existingRooms)
+
+  // Update ref when existingRooms changes
+  existingRoomsRef.current = existingRooms
 
   const clearMessages = useCallback(() => {
     setError(null)
@@ -61,6 +66,25 @@ export function useRoomImport(
               return `${roomId}: ${r.validation.errors.join(', ')}`
             }).join('\n')
             throw new Error(`Invalid room format:\n${errorDetails}`)
+          }
+
+          // Check for duplicate room IDs
+          const existingIds = new Set(existingRoomsRef.current.map(r => r.id))
+          const duplicateIds = new Set<string>()
+          const idMap = new Map<string, any>()
+
+          for (const room of parsed) {
+            if (existingIds.has(room.id)) {
+              duplicateIds.add(room.id)
+            }
+            if (idMap.has(room.id)) {
+              duplicateIds.add(room.id)
+            }
+            idMap.set(room.id, room)
+          }
+
+          if (duplicateIds.size > 0) {
+            throw new Error(`Duplicate room IDs found: ${Array.from(duplicateIds).join(', ')}. Room IDs must be unique.`)
           }
 
           onImportFullRooms(parsed)
@@ -103,6 +127,12 @@ export function useRoomImport(
           if (!validation.isValid) {
             const roomId = parsed.id || 'Unknown room'
             throw new Error(`Invalid room format for ${roomId}: ${validation.errors.join(', ')}`)
+          }
+
+          // Check for duplicate room ID
+          const existingIds = new Set(existingRoomsRef.current.map(r => r.id))
+          if (existingIds.has(parsed.id)) {
+            throw new Error(`Room ID "${parsed.id}" already exists. Room IDs must be unique.`)
           }
 
           onImportSingleRoom(parsed)

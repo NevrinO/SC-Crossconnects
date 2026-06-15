@@ -8,6 +8,12 @@ This file contains generalized architectural guardrails derived from past agent 
 
 **File Maintenance Rule**: When adding new lessons to this file, always append them at the end. Do not insert lessons in the middle, as this requires renumbering all subsequent rules. The rules do not need to be in any particular order - they are a collection of guardrails that should be applied regardless of position.
 
+**CRITICAL EDITING GUARDRAIL**: Before editing this file to add new lessons, you MUST:
+1. Read the last 20 lines of the file to identify the current highest rule number
+2. Verify your edit will append after the last rule, not insert in the middle
+3. After editing, read the edited section to confirm no duplicate rule numbers exist
+4. Never use edit with `old_string` that matches a middle section - always target the end of the file
+
 ### 1. Object & Array Comparisons
 - **Rule**: Do not rely on naive `json.dumps()` or `str()` comparisons for arbitrary arrays or objects.
 - **Guardrail**: Account for non-serializable types (datetimes, sets), circular references, and key sorting. Use try/except fallbacks or deep-comparison helper functions to avoid runtime crashes.
@@ -247,53 +253,47 @@ This file contains generalized architectural guardrails derived from past agent 
 
 ### 57. Prevent Race Conditions in Data Restoration
 - **Rule**: Never have multiple independent components restore from the same data source on initialization.
-- **Guardrail**: When multiple components need access to persisted data, designate a single source of truth for restoration. Duplicate restoration logic creates race conditions where data can be overwritten or corrupted. Either: (1) consolidate all restoration logic in a single hook/service, (2) implement proper synchronization with loading states, or (3) use a data loading pattern where dependent components wait for the primary restoration to complete before accessing data.
 
-### 58. Use Proper Comparison Functions for Domain-Specific Data Types
-- **Rule**: Never use generic string/number comparison for domain-specific data types that have custom ordering rules.
-- **Guardrail**: When comparing data types like column labels, version numbers, or coordinate systems that don't follow natural ordering, use the established comparison functions from the codebase. Generic comparisons (`<`, `>`, `localeCompare`) will produce incorrect results for domain-specific data (e.g., "AA" > "Z" in string comparison but should come after in column ordering). Always use the specialized comparison functions that exist for the data type.
+### 58. Copy-Paste Error Prevention in Similar Code Blocks
+- **Rule**: When implementing similar code blocks (e.g., keyboard handlers for different arrow keys), verify each block uses the correct variable references for its specific case.
+- **Guardrail**: Copy-paste errors often occur when implementing similar logic patterns with slight variations (e.g., ArrowUp uses y, ArrowRight uses x). After pasting similar code blocks, systematically review each variable reference to ensure it matches the intended behavior. Typos like using `p.y` for ArrowRight instead of `p.x` cause incorrect functionality that may not be immediately obvious during testing.
 
-### 59. Validate Array Bounds Before Accessing Elements
-- **Rule**: Always check array length before accessing elements by index, especially when arrays could be empty.
-- **Guardrail**: When accessing array elements like `arr[0]` or `arr[arr.length - 1]`, first verify the array has elements. Empty arrays will throw "Cannot read properties of undefined" when accessing non-existent indices. Add explicit length checks or use optional chaining with fallbacks. This is critical for arrays derived from dynamic data sources where empty collections are valid edge cases.
+### 59. Timer Cleanup on Component Unmount
+- **Rule**: Always clear setTimeout/setInterval timers in useEffect cleanup functions to prevent state updates on unmounted components.
+- **Guardrail**: When using useRef to store timer IDs (setTimeout/setInterval), add a useEffect cleanup function that clears the timer. Failing to do so causes React warnings about state updates on unmounted components and potential memory leaks. The cleanup should run in the useEffect return: `useEffect(() => { return () => { if (timerRef.current) clearTimeout(timerRef.current) } }, [])`.
 
-### 60. Add Bounds Validation for Parsed Numeric Values
-- **Rule**: Always validate that parsed numeric values are within expected domain bounds before using them.
-- **Guardrail**: When parsing coordinates, dimensions, or other numeric values from strings, validate the results are within reasonable ranges for the application domain. Unbounded numeric values can cause UI overflow, infinite loops, or calculation errors. Define and enforce minimum/maximum bounds appropriate for each numeric type (e.g., coordinates 1-9999, tile sizes 0.1-100ft).
+### 60. UI Positioning Must Account for Scroll Position
+- **Rule**: When positioning UI elements (context menus, tooltips, dropdowns) relative to a scrollable container, include the container's scrollLeft/scrollTop offsets in the position calculation.
+- **Guardrail**: Calculating position as `e.clientX - rect.left` ignores scroll position if the container has been scrolled. The correct calculation is `e.clientX - rect.left + containerRef.current.scrollLeft`. Missing scroll offset causes the positioned element to appear in the wrong location when the user has scrolled the container.
 
-### 61. Prevent State Updates on Unmounted Components
-- **Rule**: Never update state on components that may have unmounted, especially in async operations.
-- **Guardrail**: When using async operations (timeouts, promises, network requests) that update component state, track mount status and prevent updates if the component has unmounted. Use a ref to track mounted status and check it before calling state setters. This prevents memory leaks and "Can't perform a React state update on an unmounted component" warnings.
-- **Guardrail**: If a schema includes fields for debug information, telemetry, or audit data, either populate them from real values at the time of computation, or omit the fields from the persisted schema entirely. Persisting zeros, empty strings, or fabricated timestamps creates a false sense of data integrity and renders downstream validation meaningless. If the data is not yet available, defer persistence until it is, or use a schema that does not require the unavailable fields.
+### 61. Validation After Data Transformation
+- **Rule**: When validating data that undergoes transformation (e.g., bulk edit applying changes), validate the final transformed values, not the original values.
+- **Guardrail**: If validation checks the original data before applying transformations, invalid states may pass validation. For example, bulk edit validation that checks `segment.fiberHeight` (original) instead of the value after applying `bulkEditData.fiberHeight` allows invalid type-height combinations to be saved. Always compute the final state first, then validate the final state.
 
-### 57. User-Facing Imports Must Surface Errors Explicitly
-- **Rule**: When parsing user-uploaded files (CSV, JSON, etc.), every row or record that cannot be processed must be reported to the user with a clear reason, not silently discarded.
-- **Guardrail**: Silent skipping of invalid rows during bulk import is a form of data loss that frustrates users and erodes trust. Design import pipelines to return structured error information (e.g., row number, field, failure reason) alongside successfully processed items. The UI should display a summary like "450 imported, 3 errors" with a downloadable error report. Never use `continue` or silent filtering as the primary error-handling strategy for user-provided data.
-
-### 58. Structural Type Comparison Requires AST or Semantic Analysis
+### 62. Use Proper Comparison Functions for Domain-Specific Data Types
 - **Rule**: When comparing TypeScript type definitions for synchronization validation, use structural comparison (AST parsing) rather than naive string comparison.
 - **Guardrail**: String-based type comparison is fragile to formatting differences (comments, imports, exports, whitespace) that don't affect semantic meaning. Use TypeScript compiler API or a dedicated type comparison tool to compare interface/type definitions structurally. If string comparison must be used, strip all comments, imports, exports, and normalize whitespace aggressively, but prefer AST-based approaches for reliability.
 
-### 59. Event Delta vs Total Distance for Axis Selection
+### 63. Event Delta vs Total Distance for Axis Selection
 - **Rule**: When implementing axis selection logic (e.g., "prefer horizontal vs vertical drag"), calculate total distance from the interaction start point, not the delta from the last event.
 - **Guardrail**: Mouse/touch event properties like `movementX` and `movementY` represent the delta since the last event, not cumulative distance. Using these for axis selection causes incorrect behavior when movement speed varies. Store the initial coordinates when the interaction begins and calculate `Math.abs(currentX - startX)` for axis selection. This ensures consistent behavior regardless of movement speed or event frequency.
 
-### 60. Avoid Stale State in Same-Function Updates
+### 64. Avoid Stale State in Same-Function Updates
 - **Rule**: When a function updates state and then immediately uses that state value for calculation or validation, use the local value directly instead of reading from state.
 - **Guardrail**: React state updates are batched and asynchronous. Reading state immediately after `setState` returns the stale value from the previous render. For calculations that depend on the new value, use the local variable that was passed to `setState` or calculated locally. This prevents validation checks, overlap detection, or other logic from operating on outdated data.
 
-### 61. Avoid Race Conditions in Multi-Effect State Synchronization
+### 65. Avoid Race Conditions in Multi-Effect State Synchronization
 - **Rule**: When using multiple `useEffect` hooks to coordinate state transitions (e.g., data restoration → save enablement), never include intermediate state in dependency arrays of downstream effects.
 - **Guardrail**: React effects with shared dependencies can fire in unpredictable order during state transitions. If Effect A sets State X and Effect B (which depends on State X) also depends on an intermediate value that Effect A modifies, Effect B may run prematurely with stale data. Only include the boolean/sync state (e.g., `restorationDone`) in the downstream effect's dependencies, not the data being restored (e.g., `rooms`).
 
-### 62. Enforce Maximum Limits on Range Generation Functions
+### 66. Enforce Maximum Limits on Range Generation Functions
 - **Rule**: Functions that generate ranges, sequences, or collections from user input must enforce a maximum output size to prevent memory exhaustion and UI freezes.
 - **Guardrail**: Range generation functions (e.g., `generateLetterRange`, date sequences, ID ranges) can create arbitrarily large arrays if called with extreme inputs. Add a configurable maximum limit (e.g., 1000 items) and throw an error if the range would exceed it. This prevents accidental or malicious inputs from crashing the application through memory exhaustion.
 
-### 63. Pre-Flight Storage Validation Before Persistence
+### 67. Pre-Flight Storage Validation Before Persistence
 - **Rule**: Before writing data to storage (localStorage, IndexedDB, file system), validate the serialized size against available/quota limits.
 - **Guardrail**: Storage APIs throw `QuotaExceededError` only at write time, after potentially expensive serialization and compression. Add a size check before the write operation and provide user-actionable error messages ("Export and clear some data") rather than cryptic quota errors. Include a hard maximum (e.g., 5MB for localStorage) that triggers graceful degradation before the browser's limit.
 
-### 64. Nested Error Handling for Decompression Operations
+### 68. Nested Error Handling for Decompression Operations
 - **Rule**: When attempting decompression as a fallback after parse failure, wrap the decompression in its own try-catch block.
 - **Guardrail**: Compression libraries like LZ-string can throw synchronous errors on malformed input, separate from the initial parse failure. A single try-catch around both operations causes the decompression error to mask the original parse error and may leave the application in an undefined state. Use nested try-catch blocks to handle each failure mode independently with appropriate logging and user feedback.

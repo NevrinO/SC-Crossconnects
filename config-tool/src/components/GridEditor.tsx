@@ -1,16 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Room, GridPoint, PathSegment } from '../types/editor'
 import { calculateGridBounds, compareXLabels } from '../lib/grid-utils'
 import { SegmentForm } from './SegmentForm'
+import { showSuccess, showError } from '../lib/toast'
 
 interface GridEditorProps {
   room: Room
   onSegmentCreate?: (segment: PathSegment) => void
   onSegmentSelect?: (segmentId: string | null) => void
+  onSegmentDelete?: (segmentId: string) => void
   selectedSegmentId?: string | null
 }
 
-export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSegmentId }: GridEditorProps) {
+export function GridEditor({ room, onSegmentCreate, onSegmentSelect, onSegmentDelete, selectedSegmentId }: GridEditorProps) {
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -24,8 +26,18 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
   const [showSegmentForm, setShowSegmentForm] = useState(false)
   const [hoveredSegment, setHoveredSegment] = useState<PathSegment | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; segment: PathSegment } | null>(null)
+  const [showConnections, setShowConnections] = useState(true)
+  const [layerFilter, setLayerFilter] = useState<'all' | 'fiber' | 'copper'>('all')
+  const [showShortcutDialog, setShowShortcutDialog] = useState(false)
+  const [measurementMode, setMeasurementMode] = useState(false)
+  const [measurementPoints, setMeasurementPoints] = useState<GridPoint[]>([])
+  const [measurementFinished, setMeasurementFinished] = useState(false)
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const measurementTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastClickTimeRef = useRef<number>(0)
+  const lastClickPointRef = useRef<GridPoint | null>(null)
 
   const bounds = calculateGridBounds(room)
   const cellSize = 40 * zoom
@@ -47,6 +59,26 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
 
   const xAxisCount = xAxisLabels.length
   const yAxisCount = yAxisLabels.length
+
+  // Cleanup measurement timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (measurementTimeoutRef.current) {
+        clearTimeout(measurementTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Find connections between segments (end of one matches start of another)
+  const findConnections = (segment: PathSegment): PathSegment[] => {
+    return room.pathSegments.filter(other => {
+      if (other.id === segment.id) return false
+      return (
+        (other.start.x === segment.end.x && other.start.y === segment.end.y) ||
+        (other.end.x === segment.start.x && other.end.y === segment.start.y)
+      )
+    })
+  }
 
   // Convert screen coordinates to grid coordinates
   const screenToGrid = (clientX: number, clientY: number): GridPoint | null => {
@@ -129,8 +161,8 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Right-click drag to pan
-    if (e.button === 2) {
+    // Right-click drag to pan (unless Shift is held for context menu)
+    if (e.button === 2 && !e.shiftKey) {
       e.preventDefault()
       setIsDragging(true)
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
@@ -146,6 +178,33 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
       // Clicked on grid margin/labels — start pan
       setIsDragging(true)
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+      return
+    }
+
+    // Measurement mode: add point on click, double-click to finish
+    if (measurementMode) {
+      const now = Date.now()
+      const isDoubleClick = lastClickPointRef.current &&
+        lastClickPointRef.current.x === gridPoint.x &&
+        lastClickPointRef.current.y === gridPoint.y &&
+        (now - lastClickTimeRef.current) < 300
+
+      if (isDoubleClick && measurementPoints.length > 1) {
+        // Double-click on same point - finish measurement but keep it visible
+        setMeasurementMode(false)
+        setMeasurementFinished(true)
+        return
+      }
+
+      if (measurementPoints.length === 0) {
+        startMeasurement(gridPoint)
+      } else {
+        // Add new point to continue path
+        setMeasurementPoints([...measurementPoints, gridPoint])
+      }
+
+      lastClickTimeRef.current = now
+      lastClickPointRef.current = gridPoint
       return
     }
 
@@ -241,13 +300,228 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
     setOverlapWarning('none')
   }
 
+  const clearMeasurement = () => {
+    setMeasurementMode(false)
+    setMeasurementPoints([])
+    setMeasurementFinished(false)
+    if (measurementTimeoutRef.current) {
+      clearTimeout(measurementTimeoutRef.current)
+      measurementTimeoutRef.current = null
+    }
+  }
+
+  const startMeasurement = (point: GridPoint) => {
+    setMeasurementMode(true)
+    setMeasurementPoints([point])
+    lastClickTimeRef.current = Date.now()
+    lastClickPointRef.current = point
+  }
+
+  const calculateDistance = (start: GridPoint, end: GridPoint): { tiles: number; feet: number } | null => {
+    let x1i: number, y1i: number, x2i: number, y2i: number
+    if (isHorizontalNumbers) {
+      x1i = bounds.yLabels.indexOf(start.y)
+      y1i = bounds.xLabels.indexOf(start.x)
+      x2i = bounds.yLabels.indexOf(end.y)
+      y2i = bounds.xLabels.indexOf(end.x)
+    } else {
+      x1i = bounds.xLabels.indexOf(start.x)
+      y1i = bounds.yLabels.indexOf(start.y)
+      x2i = bounds.xLabels.indexOf(end.x)
+      y2i = bounds.yLabels.indexOf(end.y)
+    }
+    
+    // Validate points are within bounds
+    if (x1i === -1 || y1i === -1 || x2i === -1 || y2i === -1) {
+      return null
+    }
+    
+    const dx = Math.abs(x2i - x1i)
+    const dy = Math.abs(y2i - y1i)
+    const tiles = Math.sqrt(dx * dx + dy * dy)
+    const feet = tiles * room.tileSize
+    return { tiles, feet }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') handleCancelSegment()
+    // Focus guard: only fire shortcuts when GridEditor has focus (not in INPUT/TEXTAREA/SELECT)
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+      return
+    }
+
+    if (e.key === 'Escape') {
+      handleCancelSegment()
+      setContextMenu(null)
+      clearMeasurement()
+      return
+    }
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (selectedSegmentId && onSegmentDelete) {
+        onSegmentDelete(selectedSegmentId)
+        showSuccess('Segment deleted')
+      }
+      return
+    }
+
+    if (e.key === '+' || e.key === '=' || e.key === 'e' || e.key === 'E') {
+      handleZoomIn()
+      return
+    }
+
+    if (e.key === '-' || e.key === '_' || e.key === 'q' || e.key === 'Q') {
+      handleZoomOut()
+      return
+    }
+
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      e.preventDefault()
+      setPan(p => ({ ...p, y: p.y + 50 }))
+      return
+    }
+
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+      e.preventDefault()
+      setPan(p => ({ ...p, y: p.y - 50 }))
+      return
+    }
+
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+      e.preventDefault()
+      setPan(p => ({ ...p, x: p.x + 50 }))
+      return
+    }
+
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+      e.preventDefault()
+      setPan(p => ({ ...p, x: p.x - 50 }))
+      return
+    }
+
+    if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      // Trigger manual save - this will be handled by parent component
+      window.dispatchEvent(new CustomEvent('manual-save'))
+      showSuccess('Saved')
+      return
+    }
+
+    if (e.key === '?') {
+      setShowShortcutDialog(!showShortcutDialog)
+      return
+    }
+  }
+
+  const handleContextMenu = (e: React.MouseEvent, segment: PathSegment) => {
+    if (!e.shiftKey) return
+    e.preventDefault()
+    e.stopPropagation()
+    const container = containerRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    setContextMenu({
+      x: e.clientX - rect.left + container.scrollLeft,
+      y: e.clientY - rect.top + container.scrollTop,
+      segment
+    })
+  }
+
+  const handleDuplicateSegment = () => {
+    if (!contextMenu) return
+    const newSegment: PathSegment = {
+      ...contextMenu.segment,
+      id: crypto.randomUUID(),
+      name: `${contextMenu.segment.name} (Copy)`
+    }
+    if (onSegmentCreate) {
+      onSegmentCreate(newSegment)
+      showSuccess('Segment duplicated')
+    }
+    setContextMenu(null)
+  }
+
+  const handleDeleteSegment = () => {
+    if (!contextMenu || !onSegmentDelete) return
+    onSegmentDelete(contextMenu.segment.id)
+    showSuccess('Segment deleted')
+    setContextMenu(null)
+  }
+
+  const handleEditSegment = () => {
+    if (!contextMenu) return
+    if (onSegmentSelect) {
+      onSegmentSelect(contextMenu.segment.id)
+    }
+    setContextMenu(null)
   }
 
   const handleReset = () => {
     setZoom(1)
     setPan({ x: 0, y: 0 })
+  }
+
+  const handleExportImage = () => {
+    if (!svgRef.current) return
+    const svg = svgRef.current
+    
+    // Validate SVG has valid dimensions
+    if (!svg.width.baseVal.value || !svg.height.baseVal.value) {
+      showError('Cannot export: SVG has invalid dimensions')
+      return
+    }
+    
+    const serializer = new XMLSerializer()
+    let svgString: string
+    try {
+      svgString = serializer.serializeToString(svg)
+    } catch (e) {
+      showError('Failed to serialize SVG for export')
+      return
+    }
+    
+    // Validate SVG string is not empty
+    if (!svgString || svgString.length === 0) {
+      showError('Cannot export: SVG serialization produced empty result')
+      return
+    }
+    
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = svg.width.baseVal.value
+        canvas.height = svg.height.baseVal.value
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.fillStyle = 'white'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+          ctx.drawImage(img, 0, 0)
+          const pngUrl = canvas.toDataURL('image/png')
+          const link = document.createElement('a')
+          link.download = `${room.name.replace(/[^a-z0-9]/gi, '_')}_grid.png`
+          link.href = pngUrl
+          link.click()
+          showSuccess('Image exported')
+        } else {
+          showError('Failed to get canvas context for export')
+        }
+      } catch (e) {
+        showError('Failed to convert SVG to PNG')
+      } finally {
+        URL.revokeObjectURL(url)
+      }
+    }
+    
+    img.onerror = () => {
+      showError('Failed to load SVG for export')
+      URL.revokeObjectURL(url)
+    }
+    
+    img.src = url
   }
 
   const gridWidth = (xAxisCount + 2) * cellSize  // +1 left label col + 1 right label col
@@ -272,9 +546,24 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-xl font-semibold">Grid Editor</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Click start → click end: draw segment &nbsp;•&nbsp; Right-click drag: pan &nbsp;•&nbsp; Scroll or +/− to zoom &nbsp;•&nbsp; Esc to cancel</p>
+          <p className="text-xs text-gray-500 mt-0.5">Click start → click end: draw segment &nbsp;•&nbsp; Right-click drag: pan &nbsp;•&nbsp; Shift+Right-click: context menu &nbsp;•&nbsp; Scroll or +/− to zoom &nbsp;•&nbsp; WASD/Arrows: pan &nbsp;•&nbsp; Esc to cancel</p>
         </div>
         <div className="flex items-center gap-2">
+          <select
+            value={layerFilter}
+            onChange={(e) => setLayerFilter(e.target.value as any)}
+            className="px-2 py-1 border border-gray-300 rounded text-sm"
+          >
+            <option value="all">All Layers</option>
+            <option value="fiber">Fiber Only</option>
+            <option value="copper">Copper Only</option>
+          </select>
+          <button
+            onClick={() => setShowConnections(!showConnections)}
+            className={`px-2 py-1 border rounded text-sm ${showConnections ? 'bg-blue-100 border-blue-300' : 'bg-gray-50 border-gray-300'}`}
+          >
+            {showConnections ? 'Hide Connections' : 'Show Connections'}
+          </button>
           <button
             onClick={handleZoomOut}
             className="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-bold w-8"
@@ -295,15 +584,52 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
           <button
             onClick={handleReset}
             className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm ml-2"
+            title="Reset zoom and pan to default"
           >
             Reset View
+          </button>
+          <button
+            onClick={() => setShowShortcutDialog(true)}
+            className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm ml-2"
+            title="Keyboard shortcuts (?)"
+          >
+            ⌨️ Shortcuts
+          </button>
+          <button
+            onClick={() => {
+              clearMeasurement()
+              setMeasurementMode(!measurementMode)
+            }}
+            className={`px-3 py-1 rounded text-sm ml-2 ${measurementMode ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+            title="Measurement tool"
+          >
+            📏 Measure
+          </button>
+          {measurementMode && measurementPoints.length >= 2 && (
+            <button
+              onClick={() => {
+                setMeasurementMode(false)
+                setMeasurementFinished(true)
+              }}
+              className="px-3 py-1 bg-green-500 text-white hover:bg-green-600 rounded text-sm ml-2"
+              title="Finish measurement"
+            >
+              ✓ Finish
+            </button>
+          )}
+          <button
+            onClick={handleExportImage}
+            className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm ml-2"
+            title="Export as PNG"
+          >
+            📷 Export Image
           </button>
         </div>
       </div>
 
       <div
         ref={containerRef}
-        className="border border-gray-300 rounded overflow-auto cursor-crosshair"
+        className="border border-gray-300 rounded overflow-auto cursor-crosshair relative"
         style={{ height: '792px' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -400,30 +726,38 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
 
             {/* Render segments */}
             {(() => {
-              // Build a map from path-key → segment indices, so co-path segments get perpendicular offsets
-              const pathGroups = new Map<string, number[]>()
-              room.pathSegments.forEach((seg, idx) => {
+              // Filter segments by layer first
+              const filteredSegments = room.pathSegments.filter(segment => {
+                if (layerFilter === 'all') return true
+                if (layerFilter === 'fiber') return segment.type === 'fiber-path' || segment.type === 'mixed-path'
+                if (layerFilter === 'copper') return segment.type === 'copper-path' || segment.type === 'mixed-path'
+                return true
+              })
+
+              // Build a map from path-key → segment IDs, so co-path segments get perpendicular offsets
+              const pathGroups = new Map<string, string[]>()
+              filteredSegments.forEach((seg) => {
                 const isH = seg.start.y === seg.end.y
                 const key = isH
                   ? `H:${seg.start.y}:${[seg.start.x, seg.end.x].sort(compareXLabels).join('-')}`
                   : `V:${seg.start.x}:${[seg.start.y, seg.end.y].sort((a,b)=>a-b).join('-')}`
                 const group = pathGroups.get(key) ?? []
-                group.push(idx)
+                group.push(seg.id)
                 pathGroups.set(key, group)
               })
 
-              // Compute perpendicular offset for each segment
+              // Compute perpendicular offset for each segment by ID
               const OFFSET_PX = 5 * zoom
-              const segmentOffsets = new Map<number, number>()
-              pathGroups.forEach((indices) => {
-                const count = indices.length
-                indices.forEach((idx, slot) => {
+              const segmentOffsets = new Map<string, number>()
+              pathGroups.forEach((segmentIds) => {
+                const count = segmentIds.length
+                segmentIds.forEach((segId, slot) => {
                   // Centre the group: slot 0 of 1 → 0, slot 0 of 2 → -0.5, slot 1 of 2 → +0.5, etc.
-                  segmentOffsets.set(idx, (slot - (count - 1) / 2) * OFFSET_PX)
+                  segmentOffsets.set(segId, (slot - (count - 1) / 2) * OFFSET_PX)
                 })
               })
 
-              return room.pathSegments.map((segment, segIdx) => {
+              return filteredSegments.map((segment) => {
               let startXIndex: number, startYIndex: number, endXIndex: number, endYIndex: number
               if (isHorizontalNumbers) {
                 startXIndex = bounds.yLabels.indexOf(segment.start.y)
@@ -453,7 +787,7 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
                   : '#8b5cf6'
 
               // Apply perpendicular offset so co-path segments don't overlap
-              const offset = segmentOffsets.get(segIdx) ?? 0
+              const offset = segmentOffsets.get(segment.id) ?? 0
               const isHorizontalSeg = y1 === y2
               const ox = isHorizontalSeg ? 0 : offset
               const oy = isHorizontalSeg ? offset : 0
@@ -461,6 +795,9 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
 
               const isSelected = selectedSegmentId === segment.id
               const strokeWidth = isSelected ? 5 * zoom : 3 * zoom
+
+              // Find connections for this segment
+              const connections = showConnections ? findConnections(segment) : []
 
               return (
                 <g key={segment.id}>
@@ -479,13 +816,14 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
                         onSegmentSelect(segment.id)
                       }
                     }}
+                    onContextMenu={(e) => handleContextMenu(e, segment)}
                     onMouseEnter={(e) => {
                       setHoveredSegment(segment)
                       if (containerRef.current) {
                         const rect = containerRef.current.getBoundingClientRect()
                         setTooltipPosition({
-                          x: e.clientX - rect.left,
-                          y: e.clientY - rect.top
+                          x: e.clientX - rect.left + (containerRef.current.scrollLeft || 0),
+                          y: e.clientY - rect.top + (containerRef.current.scrollTop || 0)
                         })
                       }
                     }}
@@ -493,8 +831,8 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
                       if (containerRef.current) {
                         const rect = containerRef.current.getBoundingClientRect()
                         setTooltipPosition({
-                          x: e.clientX - rect.left,
-                          y: e.clientY - rect.top
+                          x: e.clientX - rect.left + (containerRef.current.scrollLeft || 0),
+                          y: e.clientY - rect.top + (containerRef.current.scrollTop || 0)
                         })
                       }
                     }}
@@ -517,6 +855,27 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
                       style={{ pointerEvents: 'none' }}
                     />
                   )}
+                  {/* Connection indicators */}
+                  {showConnections && connections.map(conn => {
+                    // Determine connection point (start or end)
+                    const isStartConnected = conn.start.x === segment.end.x && conn.start.y === segment.end.y
+                    const isEndConnected = conn.end.x === segment.start.x && conn.end.y === segment.start.y
+                    const cx = isStartConnected ? rx2 : isEndConnected ? rx1 : null
+                    const cy = isStartConnected ? ry2 : isEndConnected ? ry1 : null
+                    if (cx === null || cy === null) return null
+                    return (
+                      <circle
+                        key={conn.id}
+                        cx={cx}
+                        cy={cy}
+                        r={6 * zoom}
+                        fill="#10b981"
+                        stroke="white"
+                        strokeWidth={2 * zoom}
+                        style={{ pointerEvents: 'none' }}
+                      />
+                    )
+                  })}
                 </g>
               )
               })
@@ -606,6 +965,151 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
                 />
               )
             })()}
+
+            {/* Render measurement lines */}
+            {(measurementPoints.length > 0 || measurementFinished) && (() => {
+              const segments: { x1: number; y1: number; x2: number; y2: number; distance: { tiles: number; feet: number } }[] = []
+              let totalTiles = 0
+              let totalFeet = 0
+
+              // Calculate all segment distances
+              for (let i = 0; i < measurementPoints.length - 1; i++) {
+                const start = measurementPoints[i]
+                const end = measurementPoints[i + 1]
+                const distance = calculateDistance(start, end)
+                if (distance) {
+                  totalTiles += distance.tiles
+                  totalFeet += distance.feet
+
+                  let x1i: number, y1i: number, x2i: number, y2i: number
+                  if (isHorizontalNumbers) {
+                    x1i = bounds.yLabels.indexOf(start.y); y1i = bounds.xLabels.indexOf(start.x)
+                    x2i = bounds.yLabels.indexOf(end.y);   y2i = bounds.xLabels.indexOf(end.x)
+                  } else {
+                    x1i = bounds.xLabels.indexOf(start.x); y1i = bounds.yLabels.indexOf(start.y)
+                    x2i = bounds.xLabels.indexOf(end.x);   y2i = bounds.yLabels.indexOf(end.y)
+                  }
+                  if (x1i === -1 || y1i === -1 || x2i === -1 || y2i === -1) continue
+
+                  const x1 = (x1i + 1) * cellSize + cellSize / 2
+                  const y1 = (yAxisCount - y1i) * cellSize + cellSize / 2
+                  const x2 = (x2i + 1) * cellSize + cellSize / 2
+                  const y2 = (yAxisCount - y2i) * cellSize + cellSize / 2
+
+                  segments.push({ x1, y1, x2, y2, distance })
+                }
+              }
+
+              if (segments.length === 0 && measurementPoints.length === 0) return null
+
+              // Add preview line to hover position if in measurement mode
+              let previewLine = null
+              if (measurementMode && hoverPoint && measurementPoints.length > 0) {
+                const lastPoint = measurementPoints[measurementPoints.length - 1]
+                let x1i: number, y1i: number, x2i: number, y2i: number
+                if (isHorizontalNumbers) {
+                  x1i = bounds.yLabels.indexOf(lastPoint.y); y1i = bounds.xLabels.indexOf(lastPoint.x)
+                  x2i = bounds.yLabels.indexOf(hoverPoint.y);   y2i = bounds.xLabels.indexOf(hoverPoint.x)
+                } else {
+                  x1i = bounds.xLabels.indexOf(lastPoint.x); y1i = bounds.yLabels.indexOf(lastPoint.y)
+                  x2i = bounds.xLabels.indexOf(hoverPoint.x);   y2i = bounds.yLabels.indexOf(hoverPoint.y)
+                }
+                if (x1i !== -1 && y1i !== -1 && x2i !== -1 && y2i !== -1) {
+                  const x1 = (x1i + 1) * cellSize + cellSize / 2
+                  const y1 = (yAxisCount - y1i) * cellSize + cellSize / 2
+                  const x2 = (x2i + 1) * cellSize + cellSize / 2
+                  const y2 = (yAxisCount - y2i) * cellSize + cellSize / 2
+                  previewLine = (
+                    <line
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke="#ef4444"
+                      strokeWidth={2 * zoom}
+                      strokeLinecap="round"
+                      strokeDasharray={`${5 * zoom}`}
+                      opacity={0.5}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  )
+                }
+              }
+
+              return (
+                <g>
+                  {/* Render all segment lines */}
+                  {segments.map((seg, idx) => (
+                    <line
+                      key={idx}
+                      x1={seg.x1}
+                      y1={seg.y1}
+                      x2={seg.x2}
+                      y2={seg.y2}
+                      stroke="#ef4444"
+                      strokeWidth={2 * zoom}
+                      strokeLinecap="round"
+                      strokeDasharray={`${5 * zoom}`}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  ))}
+                  {/* Render preview line */}
+                  {previewLine}
+                  {/* Render all points */}
+                  {measurementPoints.map((point, idx) => {
+                    let xi: number, yi: number
+                    if (isHorizontalNumbers) {
+                      xi = bounds.yLabels.indexOf(point.y)
+                      yi = bounds.xLabels.indexOf(point.x)
+                    } else {
+                      xi = bounds.xLabels.indexOf(point.x)
+                      yi = bounds.yLabels.indexOf(point.y)
+                    }
+                    if (xi === -1 || yi === -1) return null
+                    const x = (xi + 1) * cellSize + cellSize / 2
+                    const y = (yAxisCount - yi) * cellSize + cellSize / 2
+                    return (
+                      <circle
+                        key={`point-${idx}`}
+                        cx={x}
+                        cy={y}
+                        r={4 * zoom}
+                        fill="#ef4444"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                    )
+                  })}
+                  {/* Render individual segment labels */}
+                  {segments.map((seg, idx) => (
+                    <text
+                      key={`label-${idx}`}
+                      x={(seg.x1 + seg.x2) / 2}
+                      y={(seg.y1 + seg.y2) / 2 - 10 * zoom}
+                      textAnchor="middle"
+                      fontSize={10 * zoom}
+                      fill="#ef4444"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      {seg.distance.tiles.toFixed(1)}t ({seg.distance.feet.toFixed(1)}ft)
+                    </text>
+                  ))}
+                  {/* Render total distance label */}
+                  {segments.length > 0 && (
+                    <text
+                      x={segments[segments.length - 1].x2}
+                      y={segments[segments.length - 1].y2 - 20 * zoom}
+                      textAnchor="middle"
+                      fontSize={12 * zoom}
+                      fontWeight="bold"
+                      fill="#ef4444"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      Total: {totalTiles.toFixed(1)} tiles ({totalFeet.toFixed(1)}ft)
+                    </text>
+                  )}
+                </g>
+              )
+            })()}
           </g>
 
           {/* Tooltip */}
@@ -667,6 +1171,84 @@ export function GridEditor({ room, onSegmentCreate, onSegmentSelect, selectedSeg
           onClose={handleSegmentFormClose}
           onCreate={handleSegmentFormCreate}
         />
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="absolute bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+          onClick={() => setContextMenu(null)}
+        >
+          <button
+            onClick={handleEditSegment}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+          >
+            ✏️ Edit
+          </button>
+          <button
+            onClick={handleDuplicateSegment}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+          >
+            📋 Duplicate
+          </button>
+          <button
+            onClick={handleDeleteSegment}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
+          >
+            🗑️ Delete
+          </button>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Dialog */}
+      {showShortcutDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Keyboard Shortcuts</h3>
+              <button
+                onClick={() => setShowShortcutDialog(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Pan grid</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">Arrow keys / WASD</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Zoom in</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">+ / E</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Zoom out</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">- / Q</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Cancel operation</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">Escape</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Delete selected segment</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">Delete</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Save</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+S</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Show shortcuts</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded">?</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

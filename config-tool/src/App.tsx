@@ -7,8 +7,24 @@ import { NewRoomForm } from './components/NewRoomForm'
 import { SpecialCabinetEditor } from './components/SpecialCabinetEditor'
 import { ValidationSummaryPanel } from './components/ValidationSummaryPanel'
 import { RoomStatisticsDashboard } from './components/RoomStatisticsDashboard'
+import { ChangeHistory } from './components/ChangeHistory'
 import { useAutoSave } from './hooks/useAutoSave'
 import { Room, PathSegment } from './types/editor'
+import { Toaster } from 'react-hot-toast'
+import { showError, showSuccess } from './lib/toast'
+import { deepEqual } from './lib/deep-equal'
+
+interface Change {
+  id: string
+  type: 'create' | 'update' | 'delete'
+  segmentId: string
+  timestamp: Date
+  before?: PathSegment
+  after?: PathSegment
+  originalIndex?: number
+}
+
+const MAX_CHANGE_HISTORY = 100
 
 function App() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -18,6 +34,7 @@ function App() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
   const [saveReady, setSaveReady] = useState(false)
   const [restorationDone, setRestorationDone] = useState(false)
+  const [changes, setChanges] = useState<Change[]>([])
 
   // Auto-save hook - saveReady=false prevents saving empty initial state over a valid backup
   const { lastSaved, clearBackup, saveError, restoredData, restoreAttempted } = useAutoSave(rooms, selectedRoom?.id || null, saveReady)
@@ -46,13 +63,112 @@ function App() {
     }
   }, [restorationDone])
 
+  // Handle manual save (Ctrl+S)
+  useEffect(() => {
+    const handleManualSave = () => {
+      setChanges([]) // Clear history on save
+      showSuccess('Changes saved, history cleared')
+    }
+    window.addEventListener('manual-save', handleManualSave)
+    return () => window.removeEventListener('manual-save', handleManualSave)
+  }, [])
+
+  const handleRevertChange = (change: Change) => {
+    if (!selectedRoom) return
+
+    try {
+      if (change.type === 'create') {
+        // Revert create: remove the segment (inline for consistency)
+        setRooms(prev => prev.map(room => {
+          if (room.id === selectedRoom.id) {
+            return {
+              ...room,
+              pathSegments: room.pathSegments.filter(s => s.id !== change.segmentId)
+            }
+          }
+          return room
+        }))
+        setSelectedRoom(prev => prev ? {
+          ...prev,
+          pathSegments: prev.pathSegments.filter(s => s.id !== change.segmentId)
+        } : null)
+      } else if (change.type === 'delete' && change.before) {
+        // Check for ID collision before reverting delete
+        const idExists = selectedRoom.pathSegments.some(s => s.id === change.segmentId)
+        if (idExists) {
+          showError(`Cannot revert delete: segment ID "${change.segmentId}" already exists`)
+          return
+        }
+        // Revert delete: restore the segment at its original position
+        const insertIndex = change.originalIndex ?? selectedRoom.pathSegments.length
+        setRooms(prev => prev.map(room => {
+          if (room.id === selectedRoom.id) {
+            const newSegments = [...room.pathSegments]
+            newSegments.splice(insertIndex, 0, change.before!)
+            return {
+              ...room,
+              pathSegments: newSegments
+            }
+          }
+          return room
+        }))
+        setSelectedRoom(prev => prev ? {
+          ...prev,
+          pathSegments: (() => {
+            const newSegments = [...prev.pathSegments]
+            newSegments.splice(insertIndex, 0, change.before!)
+            return newSegments
+          })()
+        } : null)
+      } else if (change.type === 'update' && change.before) {
+        // Check for ID collision before reverting update
+        const idExists = selectedRoom.pathSegments.some(s => s.id === change.segmentId)
+        if (!idExists) {
+          showError(`Cannot revert update: segment ID "${change.segmentId}" no longer exists`)
+          return
+        }
+        // Revert update: restore the before state
+        setRooms(prev => prev.map(room => {
+          if (room.id === selectedRoom.id) {
+            return {
+              ...room,
+              pathSegments: room.pathSegments.map(s =>
+                s.id === change.segmentId ? change.before! : s
+            )
+            }
+          }
+          return room
+        }))
+        setSelectedRoom(prev => prev ? {
+          ...prev,
+          pathSegments: prev.pathSegments.map(s =>
+            s.id === change.segmentId ? change.before! : s
+          )
+        } : null)
+      }
+
+      // Remove the reverted change from history after state update is confirmed
+      setChanges(prev => prev.filter(c => c.id !== change.id))
+      showSuccess('Change reverted')
+    } catch (e) {
+      showError('Failed to revert change')
+    }
+  }
+
+  const handleClearHistory = () => {
+    setChanges([])
+    showSuccess('Change history cleared')
+  }
+
   const handleRoomSelect = (room: Room | null) => {
     setSelectedRoom(room)
+    setChanges([]) // Clear history when switching rooms
   }
 
   const handleImportFullRooms = (importedRooms: Room[]) => {
     setRooms(importedRooms)
     setSelectedRoom(null)
+    setChanges([]) // Clear history on import
   }
 
   const handleImportSingleRoom = (room: Room) => {
@@ -69,12 +185,14 @@ function App() {
       return [...prev, roomWithOrientation]
     })
     setSelectedRoom(roomWithOrientation)
+    setChanges([]) // Clear history on import
   }
 
   const handleRoomCreate = (room: Room) => {
     setRooms(prev => [...prev, room])
     setSelectedRoom(room)
     setShowNewRoomForm(false)
+    setChanges([]) // Clear history for new room
   }
 
   const handleRoomUpdate = (room: Room) => {
@@ -82,6 +200,7 @@ function App() {
     setSelectedRoom(room)
     setEditingRoom(null)
     setShowNewRoomForm(false)
+    setChanges([]) // Clear history on room update
   }
 
   const handleRoomEdit = (room: Room) => {
@@ -98,6 +217,7 @@ function App() {
     }
     setRooms(prev => [...prev, clonedRoom])
     setSelectedRoom(clonedRoom)
+    setChanges([]) // Clear history for cloned room
   }
 
   const handleSpecialCabinetsUpdate = (specialCabinets: Room['specialCabinets']) => {
@@ -117,9 +237,26 @@ function App() {
     // Validate ID uniqueness
     const idExists = selectedRoom.pathSegments.some(s => s.id === segment.id)
     if (idExists) {
-      alert(`Segment ID "${segment.id}" already exists in this room`)
+      showError(`Segment ID "${segment.id}" already exists in this room`)
       return
     }
+
+    // Track change
+    const newChange: Change = {
+      id: crypto.randomUUID(),
+      type: 'create',
+      segmentId: segment.id,
+      timestamp: new Date(),
+      after: segment
+    }
+    setChanges(prev => {
+      const updated = [...prev, newChange]
+      // Enforce maximum history size (Lesson 2)
+      if (updated.length > MAX_CHANGE_HISTORY) {
+        return updated.slice(-MAX_CHANGE_HISTORY)
+      }
+      return updated
+    })
 
     setRooms(prev => prev.map(room => {
       if (room.id === selectedRoom.id) {
@@ -139,6 +276,35 @@ function App() {
 
   const handleSegmentUpdate = (updatedSegments: PathSegment[]) => {
     if (!selectedRoom) return
+
+    // Track changes for each modified segment
+    const oldSegmentsMap = new Map(selectedRoom.pathSegments.map(s => [s.id, s]))
+    const newChanges: Change[] = []
+
+    updatedSegments.forEach(newSeg => {
+      const oldSeg = oldSegmentsMap.get(newSeg.id)
+      if (oldSeg && !deepEqual(oldSeg, newSeg)) {
+        newChanges.push({
+          id: crypto.randomUUID(),
+          type: 'update',
+          segmentId: newSeg.id,
+          timestamp: new Date(),
+          before: oldSeg,
+          after: newSeg
+        })
+      }
+    })
+
+    if (newChanges.length > 0) {
+      setChanges(prev => {
+        const updated = [...prev, ...newChanges]
+        // Enforce maximum history size (Lesson 2)
+        if (updated.length > MAX_CHANGE_HISTORY) {
+          return updated.slice(-MAX_CHANGE_HISTORY)
+        }
+        return updated
+      })
+    }
 
     setRooms(prev => prev.map(room => {
       if (room.id === selectedRoom.id) {
@@ -160,6 +326,28 @@ function App() {
     if (!selectedRoom) return
 
     const roomId = selectedRoom.id
+    const deletedSegment = selectedRoom.pathSegments.find(s => s.id === segmentId)
+
+    // Track change
+    if (deletedSegment) {
+      const originalIndex = selectedRoom.pathSegments.findIndex(s => s.id === segmentId)
+      const newChange: Change = {
+        id: crypto.randomUUID(),
+        type: 'delete',
+        segmentId,
+        timestamp: new Date(),
+        before: deletedSegment,
+        originalIndex
+      }
+      setChanges(prev => {
+        const updated = [...prev, newChange]
+        // Enforce maximum history size (Lesson 2)
+        if (updated.length > MAX_CHANGE_HISTORY) {
+          return updated.slice(-MAX_CHANGE_HISTORY)
+        }
+        return updated
+      })
+    }
 
     setRooms(prev => prev.map(room => {
       if (room.id === roomId) {
@@ -182,11 +370,17 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="flex justify-between items-center mb-4">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <Toaster position="top-right" toastOptions={{
+        style: {
+          background: '#111827',
+          color: '#fff',
+        },
+      }} />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Config Tool</h1>
-          <p className="text-gray-700">Phase 2b: Room Management & Data</p>
+          <p className="text-gray-700">Phase 2c: Advanced Features</p>
         </div>
         <div className="flex items-center gap-4">
           {lastSaved && (
@@ -259,7 +453,16 @@ function App() {
           room={selectedRoom}
           onSegmentCreate={handleSegmentCreate}
           onSegmentSelect={setSelectedSegmentId}
+          onSegmentDelete={handleSegmentDelete}
           selectedSegmentId={selectedSegmentId}
+        />
+      )}
+
+      {selectedRoom && (
+        <ChangeHistory
+          changes={changes}
+          onRevertChange={handleRevertChange}
+          onClearHistory={handleClearHistory}
         />
       )}
 
