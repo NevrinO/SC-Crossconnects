@@ -6,6 +6,7 @@ import { calculateManual, validateRackLocationInput } from './lib/calculation';
 import { validateRooms } from './lib/validation';
 import { usePathCalculation } from './hooks/usePathCalculation';
 import { initializeSessionCleanup } from './lib/storage';
+import type { StoredSession } from './lib/storage';
 import RoomSelector from './components/RoomSelector';
 import CabinetInput from './components/CabinetInput';
 import CableTypeSelector from './components/CableTypeSelector';
@@ -15,6 +16,11 @@ import CalculateButton from './components/CalculateButton';
 import ResultsTable from './components/ResultsTable';
 import CsvImport from './components/CsvImport';
 import SessionsPanel from './components/SessionsPanel';
+import { RoomMapContainer } from './components/RoomMapContainer';
+import { GridLayer } from './components/GridLayer';
+import { CabinetLayer } from './components/CabinetLayer';
+import { SegmentLayer } from './components/SegmentLayer';
+import { PathAnimationLayer } from './components/PathAnimationLayer';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -66,11 +72,11 @@ export default function App() {
     setError(null);
     if (!canCalculate || !selectedRoom || !cableType || !selectedPath) return;
 
-    // Use the manual calculation with the selected path segments
+    // Use the manual calculation with the selected path result
     const result = calculateManual(
       startCabinet,
       endCabinet,
-      selectedPath.segments,
+      selectedPath,
       cableType,
       slack,
       selectedRoom
@@ -84,8 +90,28 @@ export default function App() {
     setResults((prev) => [...prev, result]);
   }
 
+  function handleViewOnMap(session: StoredSession) {
+    // Use the first result from the session to populate the map
+    const firstResult = session.results[0];
+    if (!firstResult) return;
+
+    // Find the room by ID
+    const room = rooms.find(r => r.id === firstResult.room);
+    if (!room) return;
+
+    // Set all the state to match the session
+    setSelectedRoomId(firstResult.room);
+    setStartCabinet(firstResult.start);
+    setEndCabinet(firstResult.end);
+    setCableType(firstResult.cableType);
+    setError(null);
+
+    // Switch to the Manual Calculation tab (map is now embedded there)
+    setActiveTab('manual');
+  }
+
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-screen-2xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
         <div className="flex space-x-4">
@@ -146,7 +172,9 @@ export default function App() {
 
       {activeTab === 'manual' && (
         <>
-          <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+            {/* Left column - inputs */}
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <RoomSelector
               rooms={rooms}
               selectedRoomId={selectedRoomId}
@@ -156,13 +184,29 @@ export default function App() {
               }}
             />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <CabinetInput
-                label="Starting Rack"
-                value={startCabinet}
-                onChange={setStartCabinet}
-                room={selectedRoom}
-              />
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <CabinetInput
+                    label="Starting Rack"
+                    value={startCabinet}
+                    onChange={setStartCabinet}
+                    room={selectedRoom}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const temp = startCabinet
+                    setStartCabinet(endCabinet)
+                    setEndCabinet(temp)
+                  }}
+                  className="mt-6 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm shrink-0"
+                  title="Swap"
+                >
+                  ⇄
+                </button>
+              </div>
               <CabinetInput
                 label="Ending Rack"
                 value={endCabinet}
@@ -197,19 +241,84 @@ export default function App() {
               disabled={!canCalculate}
               onClick={handleCalculate}
             />
+            </div>
+
+            {/* Right column - Room Map */}
+            {selectedRoom && (
+              <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm self-start h-[calc(100vh-100px)] min-h-[400px] overflow-hidden">
+                <RoomMapContainer
+                  room={selectedRoom}
+                  startCabinet={startCabinet}
+                  endCabinet={endCabinet}
+                  selectedPathSegments={selectedPath?.segments}
+                  cableType={cableType}
+                  onSelectStart={setStartCabinet}
+                  onSelectEnd={setEndCabinet}
+                  onCalculate={handleCalculate}
+                >
+                  {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, showGrid, showCabinets, showSegments, showAnimation, showPathTooltips }) => (
+                    <>
+                      {showGrid && (
+                        <GridLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                        />
+                      )}
+                      {showCabinets && (
+                        <CabinetLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                          cabinets={selectedRoom.cabinets || []}
+                          startCabinet={startCabinet}
+                          endCabinet={endCabinet}
+                          highlightedCabinet={highlightedCabinet}
+                          onCabinetClick={onCabinetClick}
+                        />
+                      )}
+                      {showSegments && (
+                        <SegmentLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                          segments={selectedRoom.pathSegments}
+                          selectedPathSegments={selectedPathSegments}
+                          cableType={cableType}
+                          showPathTooltips={showPathTooltips}
+                        />
+                      )}
+                      {showAnimation && selectedPathSegments && (
+                        <PathAnimationLayer
+                          bounds={bounds}
+                          cellSize={cellSize}
+                          orientation={orientation}
+                          selectedPathSegments={selectedPathSegments}
+                          selectedPathNodes={selectedPath?.nodes}
+                          visible={showAnimation}
+                        />
+                      )}
+                    </>
+                  )}
+                </RoomMapContainer>
+              </div>
+            )}
           </div>
 
-          <ResultsTable results={results} />
+          {/* Results - full width below */}
+          <div className="mt-6">
+            <ResultsTable results={results} />
 
-          {results.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setResults([])}
-              className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
-            >
-              Clear results
-            </button>
-          )}
+            {results.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setResults([])}
+                className="mt-4 text-sm text-gray-500 underline hover:text-gray-700"
+              >
+                Clear results
+              </button>
+            )}
+          </div>
         </>
       )}
 
@@ -236,6 +345,7 @@ export default function App() {
         <SessionsPanel
           currentResults={results}
           onLoadSession={(sessionResults) => setResults(sessionResults)}
+          onViewOnMap={handleViewOnMap}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import type { PathSegment } from '../types/room';
+import { useState, useEffect } from 'react';
 import type { PathResult } from '../lib/pathfinding';
 
 interface PathSelectorProps {
@@ -9,17 +9,19 @@ interface PathSelectorProps {
   error: string | null;
 }
 
-/**
- * Returns the most descriptive segment for a path — the cross-row (vertical) segment
- * if one exists, otherwise the first segment. This is the one that tells the tech
- * which physical tray column to use.
- */
-function primarySegment(segments: PathSegment[]): PathSegment {
-  const vertical = segments.find(s => s.start.x === s.end.x);
-  return vertical ?? segments[0];
-}
+const INITIAL_LIMIT = 4;
 
 export default function PathSelector({ paths, selectedPath, onSelect, isCalculating, error }: PathSelectorProps) {
+  const [showAll, setShowAll] = useState(false);
+
+  // Reset collapsed state when paths change (new calculation)
+  useEffect(() => {
+    setShowAll(false);
+  }, [paths]);
+
+  const visiblePaths = showAll ? paths : paths.slice(0, INITIAL_LIMIT);
+  const hasMore = paths.length > INITIAL_LIMIT;
+
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm font-medium text-gray-700">
@@ -36,8 +38,7 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
       )}
       {!isCalculating && !error && paths.length > 0 && (
         <div className="rounded-md border border-gray-300 bg-white">
-          {paths.map((path, index) => {
-            const primary = primarySegment(path.segments);
+          {visiblePaths.map((path, index) => {
             const isSelected = selectedPath === path;
             return (
               <div
@@ -56,9 +57,9 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
                     className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500"
                   />
                   <div className="flex-1 min-w-0">
-                    {/* Primary path identifier — the tray the tech physically uses */}
+                    {/* Primary path identifier — start and end cabinets */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-gray-900">{primary.name}</span>
+                      <span className="text-sm font-semibold text-gray-900">{path.nodes[0].replace('-', '')} → {path.nodes[path.nodes.length - 1].replace('-', '')}</span>
                       <span className="text-sm font-medium text-gray-700">~{Math.ceil(path.totalDistance)}ft</span>
                       {path.isShortest && (
                         <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">shortest</span>
@@ -69,7 +70,7 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
                     </div>
                     {/* Full route — node-level path e.g. FT132→FW132→FW185→GG185 */}
                     <div className="mt-0.5 text-xs text-gray-500">
-                      Route: {path.nodes.map(n => n.replace('-', '')).join('→')}
+                      Route: {path.pathName}
                     </div>
                     {/* Distance breakdown */}
                     <div className="mt-0.5 text-xs text-gray-400">
@@ -80,6 +81,17 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
               </div>
             );
           })}
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAll(!showAll)}
+              className="w-full border-t border-gray-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+            >
+              {showAll
+                ? `Show less (${INITIAL_LIMIT} of ${paths.length})`
+                : `Show ${paths.length - INITIAL_LIMIT} more paths`}
+            </button>
+          )}
         </div>
       )}
     </div>

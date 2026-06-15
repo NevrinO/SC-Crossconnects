@@ -297,3 +297,39 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 68. Nested Error Handling for Decompression Operations
 - **Rule**: When attempting decompression as a fallback after parse failure, wrap the decompression in its own try-catch block.
 - **Guardrail**: Compression libraries like LZ-string can throw synchronous errors on malformed input, separate from the initial parse failure. A single try-catch around both operations causes the decompression error to mask the original parse error and may leave the application in an undefined state. Use nested try-catch blocks to handle each failure mode independently with appropriate logging and user feedback.
+
+### 69. Optional Type Fields Must Have Safe Defaults or Explicit Validation
+- **Rule**: When adding optional fields to types that control critical logic (e.g., calculation formulas, algorithm selection), provide safe defaults or explicit validation to prevent silent fallback to incorrect behavior.
+- **Guardrail**: If a field is optional in the type definition but used in conditional logic (e.g., `if (room.orientation === 'numbers-horizontal')`), the absence of the field will cause the condition to always be false, potentially falling through to the wrong branch. Either: (1) make the field required and validate it, (2) provide a default value during validation, or (3) add explicit fallback logic based on other available data (e.g., room ID). Never rely on optional fields being present for critical control flow without defensive handling.
+
+### 70. Use Explicit Structural Checks Instead of Derived Values for State Detection
+- **Rule**: When detecting the state or type of an object (e.g., single-segment vs multi-segment path), use explicit structural checks (e.g., array length) rather than derived values (e.g., calculated distance).
+- **Guardrail**: Using derived values like `totalTrayDistance > 0` to detect object state is fragile because the derived value depends on calculation logic that may change or have edge cases. A single-segment path could theoretically have non-zero distance, and a multi-segment path could theoretically have zero distance. Use explicit structural properties like `segments.length > 1` to detect state, as these are invariant to calculation changes and clearly reflect the object's actual structure.
+
+### 71. Respect Configuration Settings in Data Parsing
+- **Rule**: When parsing structured data (e.g., cabinet IDs, coordinates), always respect the configuration settings that define the data format.
+- **Guardrail**: If the system supports multiple formats (e.g., 'letters-first' vs 'numbers-first' coordinate formats), parsing logic must check the configuration setting and apply the appropriate parser. Hardcoding a single format assumption (e.g., regex `/^[A-Z]+/` for letters-first) causes parsing failures when the configuration uses a different format. Either use existing format-aware utilities or create a parser that accepts the format as a parameter.
+
+### 72. Deep Clone Objects Before Storing in Undo/Redo Stacks
+- **Rule**: When storing objects in undo/redo stacks or any history mechanism, always deep clone the object before storage.
+- **Guardrail**: Shallow copying arrays or storing object references directly causes history corruption when the original object is mutated. Subsequent mutations affect all stack entries that reference the same object. Use `JSON.parse(JSON.stringify(obj))` or a proper deep clone utility before pushing to history stacks. Note that JSON serialization loses function references, Date objects, and other non-serializable types - use a proper deep clone library if these are present in the data structure.
+
+### 73. Resolve Type Inconsistencies at the Source, Not in Consumers
+- **Rule**: When runtime data types don't match TypeScript type definitions, fix the inconsistency at the data source rather than adding conditional type checks in consumers.
+- **Guardrail**: If a type defines `y: number` but the runtime data contains strings, the fix should ensure the data source always produces numbers. Adding conditional checks like `typeof y === 'number' ? y : parseInt(y, 10)` in consumers masks the root problem and creates maintenance burden. Either update the type definition to reflect reality (e.g., `y: string | number`) or fix the data source to match the type definition.
+
+### 74. Display Orientation vs Data Structure Separation
+- **Rule**: When implementing orientation-dependent display (e.g., horizontal vs vertical layouts), separate the display logic from the underlying data structure.
+- **Guardrail**: Orientation should only affect which axis displays which data type (letters vs numbers), not the data structure itself. If the data structure is always `{ x: letter, y: number }`, orientation only changes whether the X axis displays letters or numbers. Never swap coordinate fields (x/y) based on orientation - this breaks data lookups. Instead, map display positions (xIndex, yIndex) to the correct data source based on orientation, but always construct the data object with the same field ordering.
+
+### 75. Complete Parent-Child Integration When Adding Component Props
+- **Rule**: When adding new callback props or custom events to child components, immediately implement the corresponding handlers in the parent component.
+- **Guardrail**: Adding props like `onCabinetChange` to a child component without implementing the handler in the parent creates non-functional features. The child component will check `if (onCabinetChange)` and silently do nothing when the prop is undefined. Similarly, dispatching custom events without adding listeners in the parent means the events are lost. Always implement the full data flow: child prop → parent handler → state update → prop re-pass, before marking the feature complete.
+
+### 76. Consistent Size Limits Across All Range Generation
+- **Rule**: When implementing size limits for range generation, apply the limits consistently to all similar operations in the same function or module.
+- **Guardrail**: If a function generates multiple ranges (e.g., X-axis and Y-axis labels), and one range uses a dedicated function with size limits (e.g., `generateLetterRange` with maxCount), the other range generation must also enforce equivalent limits. Inline loops that generate arrays without size checks create DoS vulnerabilities even when sibling operations are protected. Either extract the inline loop into a size-limited helper function, or add explicit size validation before the loop.
+
+### 77. Keyboard Shortcut Conflict Detection
+- **Rule**: When implementing keyboard shortcuts, verify that no key is bound to multiple actions in the same scope.
+- **Guardrail**: Keyboard handlers that check `e.key` must ensure each key maps to exactly one action. If multiple `if (e.key === 'X')` conditions exist for the same key, the first one will always execute and return early, making subsequent shortcuts non-functional. This is especially problematic when shortcuts are documented in UI legends or help text. Before committing keyboard handler changes, audit the handler for duplicate key bindings and resolve conflicts by reassigning keys or combining actions.

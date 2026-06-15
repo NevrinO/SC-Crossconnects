@@ -36,6 +36,7 @@ export interface Room {
   // Phase 2b: Grid bounds defined by two corner points
   xyRange?: { start: GridPoint; end: GridPoint };
   startCorner?: StartCorner;  // Which corner is the reference point (default: top-left)
+  cabinets?: Cabinet[];  // Phase 3: Explicit cabinet registry
 }
 
 export interface CalculationResult {
@@ -47,6 +48,13 @@ export interface CalculationResult {
   path: string;
   sameX: boolean;
   cableType: 'fiber' | 'copper';
+}
+
+export interface Cabinet {
+  id: string;       // base label: x+y, e.g. "FR132" (no suffix, no panel)
+  x: string;        // row, e.g. "FR"
+  y: number;        // cabinet number, e.g. 132
+  type: 'full_cab' | 'network_rack' | 'half_cab' | 'quarter_cab';
 }
 
 export interface CabinetInfo {

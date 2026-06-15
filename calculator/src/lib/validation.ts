@@ -19,6 +19,25 @@ export function validateRooms(data: unknown): Room[] {
     if (!Array.isArray(r.pathSegments)) {
       throw new Error('Invalid room data: pathSegments must be an array');
     }
+    // Validate optional fields if present
+    if (r.orientation !== undefined) {
+      if (r.orientation !== 'numbers-vertical' && r.orientation !== 'numbers-horizontal') {
+        throw new Error('Invalid room data: orientation must be "numbers-vertical" or "numbers-horizontal"');
+      }
+    }
+    if (r.startCorner !== undefined) {
+      if (typeof r.startCorner !== 'string') {
+        throw new Error('Invalid room data: startCorner must be a string');
+      }
+      const validCorners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+      if (!validCorners.includes(r.startCorner)) {
+        throw new Error('Invalid room data: startCorner must be one of ' + validCorners.join(', '));
+      }
+    }
+    // Add safe fallback for cabinets if missing
+    if (!r.cabinets) {
+      (r as unknown as Room).cabinets = [];
+    }
   }
   return rooms as Room[];
 }

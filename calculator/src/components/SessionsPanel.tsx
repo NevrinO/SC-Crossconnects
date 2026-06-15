@@ -5,10 +5,11 @@ import type { CalculationResult } from '../types/room';
 
 interface SessionsPanelProps {
   onLoadSession: (results: CalculationResult[]) => void;
+  onViewOnMap: (session: StoredSession) => void;
   currentResults: CalculationResult[];
 }
 
-export default function SessionsPanel({ onLoadSession, currentResults }: SessionsPanelProps) {
+export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResults }: SessionsPanelProps) {
   const [sessions, setSessions] = useState<StoredSession[]>([]);
   const [sessionName, setSessionName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -80,9 +81,9 @@ export default function SessionsPanel({ onLoadSession, currentResults }: Session
   };
 
   const handleExportSession = (session: StoredSession) => {
-    const csv = 'Start,End,LengthFt,LengthM,Room,Path\n' + 
+    const csv = 'Start,End,Room,Cable Type,Feet,Meters,Path\n' + 
       session.results.map(r => 
-        `"${r.start}","${r.end}",${r.feet.toFixed(2)},${r.meters.toFixed(2)},"${r.room}","${r.pathName}"`
+        `"${r.start}","${r.end}","${r.room}","${r.cableType}",${r.feet.toFixed(2)},${r.meters.toFixed(2)},"${r.pathName}"`
       ).join('\n');
     
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -161,6 +162,12 @@ export default function SessionsPanel({ onLoadSession, currentResults }: Session
                   className="rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700"
                 >
                   Load
+                </button>
+                <button
+                  onClick={() => onViewOnMap(session)}
+                  className="rounded-md bg-purple-600 px-2 py-1 text-xs font-medium text-white hover:bg-purple-700"
+                >
+                  View on Map
                 </button>
                 <button
                   onClick={() => handleExportSession(session)}

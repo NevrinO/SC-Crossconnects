@@ -12,13 +12,20 @@ export interface PathSegment {
   end: GridPoint;
   fiberHeight: number | null;
   copperHeight: number | null;
-  type: 'fiber-path' | 'ladder-rack' | 'mixed-path';
+  type: 'fiber-path' | 'copper-path' | 'mixed-path';
 }
 
 export interface SpecialCabinets {
   networkRacks: string[];
   halfCabs: string[];
   quarterCabs: string[];
+}
+
+export interface Cabinet {
+  id: string;       // base label: x+y, e.g. "FR132" (no suffix, no panel)
+  x: string;        // row, e.g. "FR"
+  y: number;        // cabinet number, e.g. 132
+  type: 'full_cab' | 'network_rack' | 'half_cab' | 'quarter_cab';
 }
 
 export interface Room {
@@ -30,6 +37,10 @@ export interface Room {
   pathSegments: PathSegment[];
   specialCabinets: SpecialCabinets;
   coordinateFormat: CoordinateFormat;
+  xyRange?: { start: GridPoint; end: GridPoint };
+  orientation?: 'numbers-vertical' | 'numbers-horizontal';
+  startCorner?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  cabinets?: Cabinet[];
 }
 
 export interface CalculationResult {
@@ -41,6 +52,7 @@ export interface CalculationResult {
   path: string;
   sameX: boolean;
   cableType: 'fiber' | 'copper';
+  turnCount?: number;
 }
 
 export interface CabinetInfo {

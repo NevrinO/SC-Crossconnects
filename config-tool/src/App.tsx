@@ -9,7 +9,7 @@ import { ValidationSummaryPanel } from './components/ValidationSummaryPanel'
 import { RoomStatisticsDashboard } from './components/RoomStatisticsDashboard'
 import { ChangeHistory } from './components/ChangeHistory'
 import { useAutoSave } from './hooks/useAutoSave'
-import { Room, PathSegment } from './types/editor'
+import { Room, PathSegment, Cabinet } from './types/editor'
 import { Toaster } from 'react-hot-toast'
 import { showError, showSuccess } from './lib/toast'
 import { deepEqual } from './lib/deep-equal'
@@ -231,6 +231,45 @@ function App() {
     setSelectedRoom(prev => prev?.id === roomId ? { ...prev, specialCabinets } : prev)
   }
 
+  const handleCabinetChange = (cabinets: Cabinet[]) => {
+    if (!selectedRoom) return
+    const roomId = selectedRoom.id
+
+    setRooms(prev => prev.map(room =>
+      room.id === roomId ? { ...room, cabinets } : room
+    ))
+
+    setSelectedRoom(prev => prev?.id === roomId ? { ...prev, cabinets } : prev)
+  }
+
+  const handleCabinetImport = (cabinets: Cabinet[]) => {
+    if (!selectedRoom) return
+    const roomId = selectedRoom.id
+
+    // Merge imported cabinets with existing ones, replacing by ID
+    const existingCabinets = selectedRoom.cabinets || []
+    const cabinetMap = new Map(existingCabinets.map(c => [c.id, c]))
+    cabinets.forEach(c => cabinetMap.set(c.id, c))
+    const mergedCabinets = Array.from(cabinetMap.values())
+
+    setRooms(prev => prev.map(room =>
+      room.id === roomId ? { ...room, cabinets: mergedCabinets } : room
+    ))
+
+    setSelectedRoom(prev => prev?.id === roomId ? { ...prev, cabinets: mergedCabinets } : prev)
+    showSuccess(`Imported ${cabinets.length} cabinets to grid`)
+  }
+
+  const handleUndo = (room: Room) => {
+    setRooms(prev => prev.map(r => r.id === room.id ? room : r))
+    setSelectedRoom(room)
+  }
+
+  const handleRedo = (room: Room) => {
+    setRooms(prev => prev.map(r => r.id === room.id ? room : r))
+    setSelectedRoom(room)
+  }
+
   const handleSegmentCreate = (segment: PathSegment) => {
     if (!selectedRoom) return
 
@@ -445,6 +484,7 @@ function App() {
         <SpecialCabinetEditor
           room={selectedRoom}
           onUpdate={handleSpecialCabinetsUpdate}
+          onCabinetImport={handleCabinetImport}
         />
       )}
 
@@ -454,6 +494,9 @@ function App() {
           onSegmentCreate={handleSegmentCreate}
           onSegmentSelect={setSelectedSegmentId}
           onSegmentDelete={handleSegmentDelete}
+          onCabinetChange={handleCabinetChange}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
           selectedSegmentId={selectedSegmentId}
         />
       )}
