@@ -10,6 +10,7 @@ interface RoomMapContainerProps {
   cableType?: 'fiber' | 'copper' | null
   onSelectStart: (cabinetId: string) => void
   onSelectEnd: (cabinetId: string) => void
+  onCalculate: () => void
   children: (props: {
     bounds: ReturnType<typeof calculateGridBounds>
     cellSize: number
@@ -22,6 +23,14 @@ interface RoomMapContainerProps {
     highlightedCabinet?: string | null
     onCabinetClick: (cabinetId: string) => void
     onJumpToCabinet: (cabinetId: string) => void
+    showGrid: boolean
+    showCabinets: boolean
+    showSegments: boolean
+    showAnimation: boolean
+    onToggleGrid: () => void
+    onToggleCabinets: () => void
+    onToggleSegments: () => void
+    onToggleAnimation: () => void
   }) => ReactNode
 }
 
@@ -35,6 +44,7 @@ export function RoomMapContainer({
   cableType,
   onSelectStart,
   onSelectEnd,
+  onCalculate,
   children,
 }: RoomMapContainerProps) {
   const [zoom, setZoom] = useState(1)
@@ -43,6 +53,11 @@ export function RoomMapContainer({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [clickState, setClickState] = useState<ClickState>('idle')
   const [highlightedCabinet, setHighlightedCabinet] = useState<string | null>(null)
+  const [clickMode, setClickMode] = useState<'start' | 'end' | null>(null)
+  const [showGrid, setShowGrid] = useState(true)
+  const [showCabinets, setShowCabinets] = useState(true)
+  const [showSegments, setShowSegments] = useState(true)
+  const [showAnimation, setShowAnimation] = useState(true)
   
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -81,6 +96,13 @@ export function RoomMapContainer({
       setClickState('idle')
     }
   }, [startCabinet, endCabinet])
+
+  // Cleanup clickMode on unmount to prevent confusing state persistence
+  useEffect(() => {
+    return () => {
+      setClickMode(null)
+    }
+  }, [])
 
   // Convert screen coordinates to grid coordinates
   const screenToGrid = (clientX: number, clientY: number): GridPoint | null => {
@@ -167,12 +189,48 @@ export function RoomMapContainer({
       return
     }
 
-    if (e.key === '+' || e.key === '=' || e.key === 'e' || e.key === 'E') {
+    // Feature 3: Keyboard shortcuts for map interaction
+    if (e.key === 's' || e.key === 'S') {
+      // S — next click sets Start
+      setClickMode('start')
+      return
+    }
+
+    if (e.key === 'f' || e.key === 'F') {
+      // F — next click sets End
+      setClickMode('end')
+      return
+    }
+
+    if (e.key === 'Escape') {
+      // Esc — clear both Start and End
+      onSelectStart('')
+      onSelectEnd('')
+      setClickMode(null)
+      return
+    }
+
+    if (e.key === 'Enter') {
+      // Enter — trigger Calculate
+      onCalculate()
+      return
+    }
+
+    if (e.key === 'x' || e.key === 'X') {
+      // X — swap Start and End
+      const temp = startCabinet
+      onSelectStart(endCabinet || '')
+      onSelectEnd(temp || '')
+      return
+    }
+
+    // Navigation shortcuts
+    if (e.key === '+' || e.key === '=') {
       handleZoomIn()
       return
     }
 
-    if (e.key === '-' || e.key === '_' || e.key === 'q' || e.key === 'Q') {
+    if (e.key === '-' || e.key === '_') {
       handleZoomOut()
       return
     }
@@ -183,7 +241,7 @@ export function RoomMapContainer({
       return
     }
 
-    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault()
       setPan(p => ({ ...p, y: p.y - 50 }))
       return
@@ -309,6 +367,19 @@ export function RoomMapContainer({
               endCabinet,
               highlightedCabinet,
               onCabinetClick: (cabinetId: string) => {
+                // Feature 3: If click mode is set, use it
+                if (clickMode === 'start') {
+                  onSelectStart(cabinetId)
+                  onSelectEnd('')
+                  setClickMode(null)
+                  return
+                }
+                if (clickMode === 'end') {
+                  onSelectEnd(cabinetId)
+                  setClickMode(null)
+                  return
+                }
+
                 // Amendment 8: Map click interaction rules
                 if (clickState === 'idle') {
                   // First click → sets Start
@@ -335,6 +406,14 @@ export function RoomMapContainer({
                 }
               },
               onJumpToCabinet: handleJumpToCabinet,
+              showGrid,
+              showCabinets,
+              showSegments,
+              showAnimation,
+              onToggleGrid: () => setShowGrid(!showGrid),
+              onToggleCabinets: () => setShowCabinets(!showCabinets),
+              onToggleSegments: () => setShowSegments(!showSegments),
+              onToggleAnimation: () => setShowAnimation(!showAnimation),
             })}
           </g>
         </svg>

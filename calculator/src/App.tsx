@@ -19,6 +19,7 @@ import { RoomMapContainer } from './components/RoomMapContainer';
 import { GridLayer } from './components/GridLayer';
 import { CabinetLayer } from './components/CabinetLayer';
 import { SegmentLayer } from './components/SegmentLayer';
+import { PathAnimationLayer } from './components/PathAnimationLayer';
 import { MapControls } from './components/MapControls';
 
 export default function App() {
@@ -282,33 +283,59 @@ export default function App() {
             cableType={cableType}
             onSelectStart={setStartCabinet}
             onSelectEnd={setEndCabinet}
+            onCalculate={handleCalculate}
           >
-            {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, onJumpToCabinet }) => (
+            {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, onJumpToCabinet, showGrid, showCabinets, showSegments, showAnimation, onToggleGrid, onToggleCabinets, onToggleSegments, onToggleAnimation }) => (
               <>
-                <MapControls onJumpToCabinet={onJumpToCabinet} />
-                <GridLayer
-                  bounds={bounds}
-                  cellSize={cellSize}
-                  orientation={orientation}
+                <MapControls
+                  onJumpToCabinet={onJumpToCabinet}
+                  onToggleGrid={onToggleGrid}
+                  onToggleCabinets={onToggleCabinets}
+                  onToggleSegments={onToggleSegments}
+                  onToggleAnimation={onToggleAnimation}
+                  showGrid={showGrid}
+                  showCabinets={showCabinets}
+                  showSegments={showSegments}
+                  showAnimation={showAnimation}
                 />
-                <SegmentLayer
-                  bounds={bounds}
-                  cellSize={cellSize}
-                  orientation={orientation}
-                  segments={selectedRoom.pathSegments}
-                  selectedPathSegments={selectedPathSegments}
-                  cableType={cableType}
-                />
-                <CabinetLayer
-                  bounds={bounds}
-                  cellSize={cellSize}
-                  orientation={orientation}
-                  cabinets={selectedRoom.cabinets || []}
-                  startCabinet={startCabinet}
-                  endCabinet={endCabinet}
-                  highlightedCabinet={highlightedCabinet}
-                  onCabinetClick={onCabinetClick}
-                />
+                {showGrid && (
+                  <GridLayer
+                    bounds={bounds}
+                    cellSize={cellSize}
+                    orientation={orientation}
+                  />
+                )}
+                {showSegments && (
+                  <SegmentLayer
+                    bounds={bounds}
+                    cellSize={cellSize}
+                    orientation={orientation}
+                    segments={selectedRoom.pathSegments}
+                    selectedPathSegments={selectedPathSegments}
+                    cableType={cableType}
+                  />
+                )}
+                {showCabinets && (
+                  <CabinetLayer
+                    bounds={bounds}
+                    cellSize={cellSize}
+                    orientation={orientation}
+                    cabinets={selectedRoom.cabinets || []}
+                    startCabinet={startCabinet}
+                    endCabinet={endCabinet}
+                    highlightedCabinet={highlightedCabinet}
+                    onCabinetClick={onCabinetClick}
+                  />
+                )}
+                {showAnimation && selectedPathSegments && (
+                  <PathAnimationLayer
+                    bounds={bounds}
+                    cellSize={cellSize}
+                    orientation={orientation}
+                    selectedPathSegments={selectedPathSegments}
+                    visible={showAnimation}
+                  />
+                )}
               </>
             )}
           </RoomMapContainer>

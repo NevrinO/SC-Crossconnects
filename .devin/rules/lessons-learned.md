@@ -329,3 +329,7 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 76. Consistent Size Limits Across All Range Generation
 - **Rule**: When implementing size limits for range generation, apply the limits consistently to all similar operations in the same function or module.
 - **Guardrail**: If a function generates multiple ranges (e.g., X-axis and Y-axis labels), and one range uses a dedicated function with size limits (e.g., `generateLetterRange` with maxCount), the other range generation must also enforce equivalent limits. Inline loops that generate arrays without size checks create DoS vulnerabilities even when sibling operations are protected. Either extract the inline loop into a size-limited helper function, or add explicit size validation before the loop.
+
+### 77. Keyboard Shortcut Conflict Detection
+- **Rule**: When implementing keyboard shortcuts, verify that no key is bound to multiple actions in the same scope.
+- **Guardrail**: Keyboard handlers that check `e.key` must ensure each key maps to exactly one action. If multiple `if (e.key === 'X')` conditions exist for the same key, the first one will always execute and return early, making subsequent shortcuts non-functional. This is especially problematic when shortcuts are documented in UI legends or help text. Before committing keyboard handler changes, audit the handler for duplicate key bindings and resolve conflicts by reassigning keys or combining actions.
