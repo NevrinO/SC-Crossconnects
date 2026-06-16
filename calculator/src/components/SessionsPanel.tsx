@@ -4,7 +4,7 @@ import { loadSessions, saveSession, deleteSession, createSessionId } from '../li
 import type { CalculationResult } from '../types/room';
 
 interface SessionsPanelProps {
-  onLoadSession: (results: CalculationResult[]) => void;
+  onLoadSession: (results: CalculationResult[], sessionName?: string) => void;
   onViewOnMap: (session: StoredSession) => void;
   currentResults: CalculationResult[];
   showSaveDialog?: boolean;
@@ -18,6 +18,8 @@ export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResul
   const showSaveDialog = externalShowSaveDialog ?? internalShowSaveDialog;
   const setShowSaveDialog = externalSetShowSaveDialog ?? setInternalShowSaveDialog;
   const [error, setError] = useState<string | null>(null);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingSessionName, setEditingSessionName] = useState('');
 
   useEffect(() => {
     loadSessionsList();
@@ -71,8 +73,55 @@ export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResul
     loadSessionsList();
   };
 
+  const handleStartEditSession = (session: StoredSession) => {
+    setEditingSessionId(session.id);
+    setEditingSessionName(session.name || '');
+  };
+
+  const handleSaveSessionName = () => {
+    if (!editingSessionId) return;
+
+    const session = sessions.find(s => s.id === editingSessionId);
+    if (!session) {
+      setError('Session no longer exists');
+      setEditingSessionId(null);
+      setEditingSessionName('');
+      return;
+    }
+
+    const updatedSession: StoredSession = {
+      ...session,
+      name: editingSessionName || `Session ${new Date().toLocaleDateString()}`
+    };
+
+    const result = saveSession(updatedSession);
+    if (!result.success) {
+      setError(result.error || 'Failed to rename session');
+      return;
+    }
+
+    setError(null);
+    setEditingSessionId(null);
+    setEditingSessionName('');
+    loadSessionsList();
+  };
+
+  const handleCancelEditSession = () => {
+    setEditingSessionId(null);
+    setEditingSessionName('');
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveSessionName();
+    } else if (e.key === 'Escape') {
+      handleCancelEditSession();
+    }
+  };
+
   const handleLoadSession = (session: StoredSession) => {
     const results: CalculationResult[] = session.results.map(r => ({
+      id: createSessionId(),
       startCab: r.start,
       endCab: r.end,
       lengthFt: r.feet,
@@ -83,7 +132,7 @@ export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResul
       cableType: r.cableType,
       qty: r.qty // Restore quantity field (defaults to 1 if not provided)
     }));
-    onLoadSession(results);
+    onLoadSession(results, session.name);
   };
 
   const handleExportSession = (session: StoredSession) => {
@@ -165,8 +214,25 @@ export default function SessionsPanel({ onLoadSession, onViewOnMap, currentResul
               key={session.id}
               className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 p-3"
             >
-              <div>
-                <div className="font-medium text-gray-900">{session.name || 'Unnamed Session'}</div>
+              <div className="flex-1">
+                {editingSessionId === session.id ? (
+                  <input
+                    type="text"
+                    value={editingSessionName}
+                    onChange={(e) => setEditingSessionName(e.target.value)}
+                    onKeyDown={handleEditKeyDown}
+                    onBlur={handleSaveSessionName}
+                    className="block w-full rounded-md border border-gray-300 px-2 py-1 text-sm font-medium text-gray-900"
+                    autoFocus
+                  />
+                ) : (
+                  <div
+                    className="font-medium text-gray-900 cursor-pointer hover:text-blue-600"
+                    onClick={() => handleStartEditSession(session)}
+                  >
+                    {session.name || 'Unnamed Session'}
+                  </div>
+                )}
                 <div className="text-xs text-gray-500">
                   {new Date(session.timestamp).toLocaleDateString()} • {session.results.length} calculations
                 </div>

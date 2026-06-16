@@ -44,6 +44,7 @@ export interface Room {
 }
 
 export interface CalculationResult {
+  id: string; // Unique identifier for undo tracking
   startCab: string;
   endCab: string;
   lengthFt: number;

@@ -219,6 +219,23 @@ function calculateTurnCount(nodes: string[], segmentIds: string[]): number {
 }
 
 /**
+ * Compute shared segments between two paths.
+ * Returns segment IDs present in both paths' segments arrays.
+ */
+export function computeSharedSegments(path1: PathResult, path2: PathResult): string[] {
+  const segments1 = new Set(path1.segments.map(s => s.id));
+  const segments2 = new Set(path2.segments.map(s => s.id));
+  
+  const shared: string[] = [];
+  for (const segId of segments1) {
+    if (segments2.has(segId)) {
+      shared.push(segId);
+    }
+  }
+  return shared;
+}
+
+/**
  * Simplify a route by removing intermediate nodes that don't represent turns.
  * Keeps only: start node, end node, and nodes where the segment ID changes.
  */

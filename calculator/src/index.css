@@ -378,3 +378,91 @@ html.dark div[class*="text-gray-400"],
 html.dark p[class*="text-gray-500"] {
   color: #64748b !important; /* Muted notes / breakdowns */
 }
+
+/* ==========================================
+   PRINT STYLES
+   ========================================== */
+
+@media print {
+  /* Hide UI chrome */
+  .tab-nav,
+  .RoomMapContainer,
+  .MapControls,
+  .SessionsPanel,
+  .CsvImport,
+  .CabinetInput,
+  .CableTypeSelector,
+  .PathSelector,
+  .SlackInput,
+  .CalculateButton,
+  .ThemeToggle,
+  button:not(.print-button),
+  input[type="checkbox"],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Show only results table and print header */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid black;
+  }
+
+  .print-header h1 {
+    font-size: 18pt;
+    margin-bottom: 10px;
+  }
+
+  .print-header .print-meta {
+    font-size: 10pt;
+    color: black;
+  }
+
+  /* Results table for print */
+  .ResultsTable {
+    border: 1px solid black !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .ResultsTable > div:first-child {
+    background: white !important;
+    border-bottom: 1px solid black !important;
+  }
+
+  .ResultsTable > div:last-child > div {
+    border-bottom: 1px solid black !important;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure text is black on white */
+  .ResultsTable,
+  .ResultsTable * {
+    background: white !important;
+    color: black !important;
+    border-color: black !important;
+  }
+
+  /* Hide action buttons in print */
+  .ResultsTable button:not(.print-button) {
+    display: none !important;
+  }
+
+  /* Hide checkboxes */
+  .ResultsTable input[type="checkbox"] {
+    display: none !important;
+  }
+
+  /* Hide Clear All link */
+  .ResultsTable > button {
+    display: none !important;
+  }
+}

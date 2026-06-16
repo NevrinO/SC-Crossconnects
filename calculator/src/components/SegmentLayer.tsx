@@ -9,6 +9,7 @@ interface SegmentLayerProps {
   orientation: 'numbers-vertical' | 'numbers-horizontal'
   segments: PathSegment[]
   selectedPathSegments?: PathSegment[]
+  diversePathSegments?: PathSegment[]
   cableType?: 'fiber' | 'copper' | null
   showPathTooltips?: boolean
 }
@@ -19,6 +20,7 @@ export function SegmentLayer({
   orientation,
   segments,
   selectedPathSegments = [],
+  diversePathSegments = [],
   cableType,
   showPathTooltips = false,
 }: SegmentLayerProps) {
@@ -26,9 +28,22 @@ export function SegmentLayer({
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
 
   // Determine segment visual state
-  const getSegmentState = (segment: PathSegment): 'muted' | 'available' | 'selected' => {
+  const getSegmentState = (segment: PathSegment): 'muted' | 'available' | 'selected' | 'diverse' | 'shared' => {
+    // Check if segment is in both paths (shared)
+    const inSelected = selectedPathSegments.some(s => s.id === segment.id);
+    const inDiverse = diversePathSegments.some(s => s.id === segment.id);
+    
+    if (inSelected && inDiverse) {
+      return 'shared';
+    }
+    
+    // Check if segment is in diverse path only
+    if (inDiverse) {
+      return 'diverse';
+    }
+    
     // Check if segment is in selected path
-    if (selectedPathSegments.some(s => s.id === segment.id)) {
+    if (inSelected) {
       return 'selected'
     }
 
@@ -53,9 +68,13 @@ export function SegmentLayer({
   }
 
   // Get segment style based on state
-  const getSegmentStyle = (state: 'muted' | 'available' | 'selected', segment: PathSegment, zoom: number) => {
+  const getSegmentStyle = (state: 'muted' | 'available' | 'selected' | 'diverse' | 'shared', segment: PathSegment, zoom: number) => {
     const baseColor = getSegmentColor(segment)
     switch (state) {
+      case 'shared':
+        return { stroke: '#f59e0b', strokeWidth: 5 * zoom, opacity: 1 } // amber-500 for shared segments
+      case 'diverse':
+        return { stroke: '#8b5cf6', strokeWidth: 5 * zoom, opacity: 1 } // violet-500 for diverse-only segments
       case 'selected':
         return { stroke: baseColor, strokeWidth: 5 * zoom, opacity: 1 }
       case 'available':

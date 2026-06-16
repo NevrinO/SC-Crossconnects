@@ -5,7 +5,7 @@ import type { Room, CalculationResult } from './types/room';
 import { calculateManual, validateRackLocationInput } from './lib/calculation';
 import { validateRooms } from './lib/validation';
 import { usePathCalculation } from './hooks/usePathCalculation';
-import { initializeSessionCleanup } from './lib/storage';
+import { initializeSessionCleanup, createSessionId } from './lib/storage';
 import type { StoredSession } from './lib/storage';
 import RoomSelector from './components/RoomSelector';
 import CabinetInput from './components/CabinetInput';
@@ -48,10 +48,12 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [editMessage, setEditMessage] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [currentSessionName, setCurrentSessionName] = useState<string | null>(null);
+  const [diversePath, setDiversePath] = useState<import('./lib/pathfinding').PathResult | null>(null);
   
   // Undo system: tracks operations to support single-level undo
   // Note: This is a single-level undo (no redo). For multi-undo, would need a stack.
-  type UndoAction = { type: 'add'; result: CalculationResult; index: number } | { type: 'remove'; results: CalculationResult[] };
+  type UndoAction = { type: 'add'; ids: string[] } | { type: 'remove'; results: CalculationResult[] };
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
   const [showUndo, setShowUndo] = useState(false);
 
@@ -82,7 +84,7 @@ export default function App() {
     if (!canCalculate || !selectedRoom || !cableType || !selectedPath) return;
 
     // Use the manual calculation with the selected path result
-    const result = calculateManual(
+    const primaryResult = calculateManual(
       startCabinet,
       endCabinet,
       selectedPath,
@@ -91,15 +93,36 @@ export default function App() {
       selectedRoom
     );
 
-    if (!result) {
+    if (!primaryResult) {
       setError('Could not calculate. Check that both cabinets are in the same room and valid.');
       return;
     }
 
+    // If diverse path is also selected, calculate it too
+    const resultsToAdd: CalculationResult[] = [{ ...primaryResult, id: createSessionId() }];
+    
+    if (diversePath) {
+      const diverseResult = calculateManual(
+        startCabinet,
+        endCabinet,
+        diversePath,
+        cableType,
+        slack,
+        selectedRoom
+      );
+      
+      if (diverseResult) {
+        // Tag the results with PRIMARY/DIVERSE labels
+        resultsToAdd[0] = { ...primaryResult, id: createSessionId(), path: `[PRIMARY] ${primaryResult.path}` };
+        resultsToAdd.push({ ...diverseResult, id: createSessionId(), path: `[DIVERSE] ${diverseResult.path}` });
+      }
+    }
+
     setResults((prev) => {
-      const newResults = [...prev, result];
-      // Track this as an 'add' operation - undo should remove it by index
-      setUndoAction({ type: 'add', result, index: prev.length });
+      const newResults = [...prev, ...resultsToAdd];
+      // Track this as an 'add' operation - undo should remove by IDs
+      const addedIds = resultsToAdd.map(r => r.id);
+      setUndoAction({ type: 'add', ids: addedIds });
       setShowUndo(true);
       return newResults;
     });
@@ -120,6 +143,7 @@ export default function App() {
     setEndCabinet(firstResult.end);
     setCableType(firstResult.cableType);
     setError(null);
+    setCurrentSessionName(session.name || null);
 
     // Switch to the Manual Calculation tab (map is now embedded there)
     setActiveTab('manual');
@@ -182,8 +206,8 @@ export default function App() {
     if (!undoAction) return;
     
     if (undoAction.type === 'add') {
-      // Undo an add: remove the result at the stored index
-      setResults(prev => prev.filter((_, i) => i !== undoAction.index));
+      // Undo an add: remove the results by their IDs
+      setResults(prev => prev.filter(r => !undoAction.ids.includes(r.id)));
     } else if (undoAction.type === 'remove') {
       // Undo a remove: restore all removed rows
       setResults(prev => [...prev, ...undoAction.results]);
@@ -335,6 +359,7 @@ export default function App() {
               paths={paths}
               selectedPath={selectedPath}
               onSelect={selectPath}
+              onDiversePathSelect={setDiversePath}
               isCalculating={isCalculating}
               error={pathError}
             />
@@ -359,12 +384,13 @@ export default function App() {
                   startCabinet={startCabinet}
                   endCabinet={endCabinet}
                   selectedPathSegments={selectedPath?.segments}
+                  diversePathSegments={diversePath?.segments}
                   cableType={cableType}
                   onSelectStart={setStartCabinet}
                   onSelectEnd={setEndCabinet}
                   onCalculate={handleCalculate}
                 >
-                  {({ bounds, cellSize, orientation, selectedPathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, showGrid, showCabinets, showSegments, showAnimation, showPathTooltips }) => (
+                  {({ bounds, cellSize, orientation, selectedPathSegments, diversePathSegments, cableType, startCabinet, endCabinet, highlightedCabinet, onCabinetClick, showGrid, showCabinets, showSegments, showAnimation, showPathTooltips }) => (
                     <>
                       {showGrid && (
                         <GridLayer
@@ -392,6 +418,7 @@ export default function App() {
                           orientation={orientation}
                           segments={selectedRoom.pathSegments}
                           selectedPathSegments={selectedPathSegments}
+                          diversePathSegments={diversePathSegments}
                           cableType={cableType}
                           showPathTooltips={showPathTooltips}
                         />
@@ -438,6 +465,7 @@ export default function App() {
               onQtyChange={handleQtyChange} 
               onDeleteSelected={handleDeleteSelected}
               onClearAll={handleClearAll}
+              sessionName={currentSessionName}
             />
           </div>
         </>
@@ -449,6 +477,7 @@ export default function App() {
           const converted: CalculationResult[] = csvResults
             .filter(r => r.status === 'OK')
             .map(r => ({
+              id: createSessionId(),
               startCab: r.start,
               endCab: r.end,
               lengthFt: r.feet || 0,
@@ -466,7 +495,10 @@ export default function App() {
       {activeTab === 'sessions' && (
         <SessionsPanel
           currentResults={results}
-          onLoadSession={(sessionResults) => setResults(sessionResults)}
+          onLoadSession={(sessionResults, sessionName) => {
+            setResults(sessionResults);
+            setCurrentSessionName(sessionName || null);
+          }}
           onViewOnMap={handleViewOnMap}
           showSaveDialog={showSaveDialog}
           setShowSaveDialog={setShowSaveDialog}

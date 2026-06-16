@@ -8,6 +8,7 @@ interface RoomMapContainerProps {
   startCabinet?: string
   endCabinet?: string
   selectedPathSegments?: import('../types/room').PathSegment[]
+  diversePathSegments?: import('../types/room').PathSegment[]
   cableType?: 'fiber' | 'copper' | null
   onSelectStart: (cabinetId: string) => void
   onSelectEnd: (cabinetId: string) => void
@@ -18,6 +19,7 @@ interface RoomMapContainerProps {
     orientation: 'numbers-vertical' | 'numbers-horizontal'
     startCorner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     selectedPathSegments?: import('../types/room').PathSegment[]
+    diversePathSegments?: import('../types/room').PathSegment[]
     cableType?: 'fiber' | 'copper' | null
     startCabinet?: string
     endCabinet?: string
@@ -44,6 +46,7 @@ export function RoomMapContainer({
   startCabinet,
   endCabinet,
   selectedPathSegments,
+  diversePathSegments,
   cableType,
   onSelectStart,
   onSelectEnd,
@@ -457,6 +460,7 @@ export function RoomMapContainer({
               orientation,
               startCorner,
               selectedPathSegments,
+              diversePathSegments,
               cableType,
               startCabinet,
               endCabinet,

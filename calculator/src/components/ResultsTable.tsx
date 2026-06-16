@@ -7,9 +7,10 @@ interface ResultsTableProps {
   onQtyChange?: (index: number, qty: number) => void;
   onDeleteSelected?: (indices: number[]) => void;
   onClearAll?: () => void;
+  sessionName?: string | null;
 }
 
-export default function ResultsTable({ results, onEditRow, onQtyChange, onDeleteSelected, onClearAll }: ResultsTableProps) {
+export default function ResultsTable({ results, onEditRow, onQtyChange, onDeleteSelected, onClearAll, sessionName }: ResultsTableProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [localQtys, setLocalQtys] = useState<Record<number, number>>({});
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
@@ -127,8 +128,26 @@ export default function ResultsTable({ results, onEditRow, onQtyChange, onDelete
     URL.revokeObjectURL(url);
   };
 
+  // Print header data
+  const firstResult = results[0];
+  const roomName = firstResult?.room || '';
+  const dateGenerated = new Date().toLocaleDateString();
+  const totalRuns = results.length;
+
   return (
-    <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <>
+      {/* Print header - only visible during print */}
+      <div className="print-header hidden">
+        <h1>Cross Connect Calculator Results</h1>
+        <div className="print-meta">
+          <div><strong>Room:</strong> {roomName}</div>
+          {sessionName && <div><strong>Session:</strong> {sessionName}</div>}
+          <div><strong>Date:</strong> {dateGenerated}</div>
+          <div><strong>Total Runs:</strong> {totalRuns}</div>
+        </div>
+      </div>
+
+      <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -149,6 +168,12 @@ export default function ResultsTable({ results, onEditRow, onQtyChange, onDelete
                 Delete selected ({selectedIndices.size})
               </button>
             )}
+            <button
+              onClick={() => window.print()}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Print
+            </button>
             <button
               onClick={handleExportCSV}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -231,5 +256,6 @@ export default function ResultsTable({ results, onEditRow, onQtyChange, onDelete
         </button>
       )}
     </div>
+    </>
   );
 }

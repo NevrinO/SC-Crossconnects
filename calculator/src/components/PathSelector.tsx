@@ -1,26 +1,92 @@
 import { useState, useEffect } from 'react';
 import type { PathResult } from '../lib/pathfinding';
+import { computeSharedSegments } from '../lib/pathfinding';
 
 interface PathSelectorProps {
   paths: PathResult[];
   selectedPath: PathResult | null;
   onSelect: (path: PathResult) => void;
+  onDiversePathSelect?: (path: PathResult | null) => void;
   isCalculating: boolean;
   error: string | null;
 }
 
 const INITIAL_LIMIT = 4;
 
-export default function PathSelector({ paths, selectedPath, onSelect, isCalculating, error }: PathSelectorProps) {
+export default function PathSelector({ paths, selectedPath, onSelect, onDiversePathSelect, isCalculating, error }: PathSelectorProps) {
   const [showAll, setShowAll] = useState(false);
+  const [diversePath, setDiversePath] = useState<PathResult | null>(null);
 
   // Reset collapsed state when paths change (new calculation)
+  // Note: usePathCalculation always creates new array references, so this triggers correctly
   useEffect(() => {
     setShowAll(false);
+    setDiversePath(null);
   }, [paths]);
+
+  // Notify parent when diverse path changes
+  useEffect(() => {
+    onDiversePathSelect?.(diversePath);
+  }, [diversePath, onDiversePathSelect]);
 
   const visiblePaths = showAll ? paths : paths.slice(0, INITIAL_LIMIT);
   const hasMore = paths.length > INITIAL_LIMIT;
+
+  // Calculate diversity score for a path relative to selected path
+  const getDiversityScore = (path: PathResult): string => {
+    if (!selectedPath || path === selectedPath) return '';
+    
+    const sharedSegments = computeSharedSegments(selectedPath, path);
+    const totalSegments = path.segments?.length ?? 0;
+    const sharedCount = sharedSegments.length;
+    
+    if (totalSegments === 0) return '';
+    
+    const sharedPercent = Math.round((sharedCount / totalSegments) * 100);
+    
+    if (sharedPercent === 0) return 'Fully diverse';
+    if (sharedPercent > 50) return `Low diversity (${sharedPercent}% shared)`;
+    return `${sharedPercent}% shared`;
+  };
+
+  const getDiversityBadgeColor = (path: PathResult): string => {
+    if (!selectedPath || path === selectedPath) return '';
+    
+    const sharedSegments = computeSharedSegments(selectedPath, path);
+    const totalSegments = path.segments?.length ?? 0;
+    const sharedCount = sharedSegments.length;
+    
+    if (totalSegments === 0) return '';
+    
+    const sharedPercent = (sharedCount / totalSegments) * 100;
+    
+    if (sharedPercent === 0) return 'bg-green-100 text-green-700';
+    if (sharedPercent > 50) return 'bg-red-100 text-red-700';
+    return 'bg-amber-100 text-amber-700';
+  };
+
+  const handlePathClick = (path: PathResult) => {
+    // If clicking the same path that's already diverse, clear diverse selection
+    if (diversePath === path) {
+      setDiversePath(null);
+      return;
+    }
+    
+    // If clicking the primary path, set it as primary (existing behavior)
+    if (path === selectedPath) {
+      onSelect(path);
+      setDiversePath(null);
+      return;
+    }
+    
+    // Otherwise, set as diverse path (if primary is already selected)
+    if (selectedPath) {
+      setDiversePath(path);
+    } else {
+      // No primary selected yet, set as primary
+      onSelect(path);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -40,20 +106,23 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
         <div className="rounded-md border border-gray-300 bg-white">
           {visiblePaths.map((path, index) => {
             const isSelected = selectedPath === path;
+            const isDiverse = diversePath === path;
+            const diversityScore = getDiversityScore(path);
+            const diversityBadgeColor = getDiversityBadgeColor(path);
             return (
               <div
                 key={index}
                 className={`cursor-pointer border-b border-gray-200 px-3 py-2 last:border-b-0 hover:bg-gray-50 ${
                   isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-300' : ''
-                }`}
-                onClick={() => onSelect(path)}
+                } ${isDiverse ? 'bg-purple-50 ring-1 ring-inset ring-purple-300' : ''}`}
+                onClick={() => handlePathClick(path)}
               >
                 <div className="flex items-start gap-3">
                   <input
                     type="radio"
                     name="path"
                     checked={isSelected}
-                    onChange={() => onSelect(path)}
+                    onChange={() => handlePathClick(path)}
                     className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500"
                   />
                   <div className="flex-1 min-w-0">
@@ -66,6 +135,9 @@ export default function PathSelector({ paths, selectedPath, onSelect, isCalculat
                       )}
                       {!path.isShortest && (
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">+{path.percentOverShortest.toFixed(0)}% longer</span>
+                      )}
+                      {diversityScore && (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${diversityBadgeColor}`}>{diversityScore}</span>
                       )}
                     </div>
                     {/* Full route — node-level path e.g. FT132→FW132→FW185→GG185 */}
