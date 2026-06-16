@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import roomsData from './data/rooms.json';
 import type { Room, CalculationResult } from './types/room';
 import { calculateManual, validateRackLocationInput } from './lib/calculation';
@@ -25,6 +24,9 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { HelpModal } from './components/HelpModal';
 
 export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return document.documentElement.classList.contains('dark');
+  });
   const [loadError] = useState<string | null>(() => {
     try { validateRooms(roomsData); return null; }
     catch (err) { return err instanceof Error ? err.message : 'Failed to load rooms data'; }
@@ -37,6 +39,25 @@ export default function App() {
   // Initialize session cleanup on mount
   useEffect(() => {
     initializeSessionCleanup();
+  }, []);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    // Use MutationObserver to detect class changes on documentElement
+    const observer = new MutationObserver(() => {
+      handleThemeChange();
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
   }, []);
 
   const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions' | 'uheight'>('manual');
@@ -255,18 +276,17 @@ export default function App() {
             Help
           </button>
           <ThemeToggle />
-          <Link
-            to="/validate"
-            className="text-sm text-gray-500 underline hover:text-gray-700"
-          >
-            Validation Tool
-          </Link>
-          <a
-            href="/legacy/index.html"
+          <button
+            onClick={() => {
+              if (isDarkMode && !confirm('Warning: Legacy Version only supports light mode. Continue?')) {
+                return;
+              }
+              window.location.href = '/legacy/index.html';
+            }}
             className="text-sm text-gray-500 underline hover:text-gray-700"
           >
             Legacy Version
-          </a>
+          </button>
         </div>
       </div>
 
