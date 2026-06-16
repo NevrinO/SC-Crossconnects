@@ -21,6 +21,7 @@ import { GridLayer } from './components/GridLayer';
 import { CabinetLayer } from './components/CabinetLayer';
 import { SegmentLayer } from './components/SegmentLayer';
 import { PathAnimationLayer } from './components/PathAnimationLayer';
+import { ThemeToggle } from './components/ThemeToggle';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -220,7 +221,8 @@ export default function App() {
     <div className="mx-auto max-w-screen-2xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
-        <div className="flex space-x-4">
+        <div className="flex items-center space-x-4">
+          <ThemeToggle />
           <Link
             to="/validate"
             className="text-sm text-gray-500 underline hover:text-gray-700"

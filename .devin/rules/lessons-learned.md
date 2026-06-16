@@ -357,3 +357,8 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 83. Undo Timeout Design Should Not Lose Earlier Operations
 - **Rule**: When implementing auto-hide timeouts for undo notifications, ensure each operation gets its own timeout or use a queue-based system.
 - **Guardrail**: If every operation clears the previous timeout and starts a new one, rapid consecutive operations will cause earlier undo opportunities to be lost before the user can act on them. This creates poor UX where users have a narrow window to undo and cannot recover from accidental rapid actions. Either use a queue where each operation has its own independent timeout, or remove auto-hide entirely and let users manually dismiss notifications. The undo system should be reliable, not fragile under normal usage patterns.
+
+### 84. Broad Wildcard CSS Selectors in Dark Mode Overrides
+- **Rule**: Avoid overly broad wildcard CSS selectors (e.g. `div[class*="bg-gray-"]` or `span` with `!important`) for dark mode overrides, as they override non-layout/state-specific elements (like indicators, alerts, status badges, and swatches) resulting in unreadable low-contrast text or invisible elements.
+- **Guardrail**: Use specific, scoped, or semantic classes for theme overrides rather than brute-force class wildcards. If global wildcards are necessary, explicitly exempt or override state-specific colors (such as alerts `bg-red-50`, `bg-yellow-50`, and status badges `bg-red-100`, `bg-green-100`) to guarantee contrast and visual correctness under all modes. Ensure that legend swatches are matched to their corresponding interactive elements' overridden colors to avoid informational mismatches.
+

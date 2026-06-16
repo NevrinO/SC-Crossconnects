@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import roomsData from '../data/rooms.json';
 import type { Room } from '../types/room';
 import { validateRooms } from '../lib/validation';
@@ -65,7 +66,15 @@ export default function Validate() {
 
   return (
     <div className="mx-auto max-w-6xl p-6">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">Validation: Old vs New Tool</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Validation: Old vs New Tool</h1>
+        <Link
+          to="/"
+          className="text-sm text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          Back to Calculator
+        </Link>
+      </div>
 
       <div className="mb-6 space-y-4">
         <button
