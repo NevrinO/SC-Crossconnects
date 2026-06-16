@@ -4,9 +4,507 @@
 
 body {
   @apply bg-gray-50 text-gray-900;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* ==========================================
+   AGENT DARK MODE OVERRIDE LAYER
+   ========================================== */
+
+/* 1. Global Layout Rules */
+html.dark, 
+html.dark body {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important;            /* slate-50 */
+}
+
+/* 2. Container & Card Mappings */
+html.dark div[class*="bg-white"],
+html.dark div[class*="bg-gray-"],
+html.dark div[class*="bg-slate-"] {
+  background-color: #1e293b !important; /* slate-800 */
+  border-color: #334155 !important;     /* slate-700 */
+  color: #f1f5f9 !important;            /* slate-100 */
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* 3. Specialized Panels (Tables, Controls, Sidebars) */
+html.dark main,
+html.dark sidebar,
+html.dark aside,
+html.dark table,
+html.dark thead,
+html.dark tr,
+html.dark .ResultsTable,
+html.dark .SessionsPanel,
+html.dark .MapControls,
+html.dark .PathSelector {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* 4. Form Inputs, Inputs, Buttons, CSV Imports */
+html.dark input,
+html.dark select,
+html.dark textarea,
+html.dark .CabinetInput,
+html.dark .CsvImport {
+  background-color: #0f172a !important;
+  border-color: #475569 !important;
+  color: #ffffff !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 5. Typography and Headers */
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark th {
+  color: #ffffff !important;
+}
+html.dark p, html.dark span, html.dark td, html.dark label {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+/* 6. Interactive SVG Layer Mapping */
+html.dark svg {
+  background-color: #0f172a !important;
+  transition: background-color 0.3s ease;
+}
+html.dark svg g[id*="grid"], html.dark svg .GridLayer line, html.dark svg .GridLayer path {
+  stroke: #334155 !important; /* Dark Grid */
+  transition: stroke 0.3s ease;
+}
+html.dark svg g[id*="cabinet"], html.dark svg .CabinetLayer rect, html.dark svg .CabinetLayer path {
+  stroke: #64748b !important; /* Dark Cabinets */
+  fill: #1e293b !important;
+  transition: stroke 0.3s ease, fill 0.3s ease;
+}
+html.dark svg g[id*="segment"], html.dark svg .SegmentLayer path {
+  stroke: #38bdf8 !important; /* Vibrant interactive paths */
+  transition: stroke 0.3s ease;
+}
+html.dark svg g[id*="animation"], html.dark svg .PathAnimationLayer {
+  stroke: #f43f5e !important;
+  transition: stroke 0.3s ease;
+}
+
+/* 7. Toggle Button Utility */
+html.dark .dark-target-toggle-hover:hover {
+  background-color: #334155 !important;
+}
+/* ==========================================
+   TARGETED CANVAS & ACCENT BUTTON PATCH
+   ========================================== */
+
+html.dark {
+  /* 1. Fix the main SVG Canvas Background and Grid lines */
+  --canvas-grid: #1e293b;
+  --canvas-cabinet: #475569;
+}
+
+/* Force the entire map viewport and its structural components to go dark */
+html.dark svg,
+html.dark .RoomMapContainer svg {
+  background-color: #0b0f19 !important;
+}
+
+/* Grid cells (background grid) - precisely target white grid squares */
+html.dark svg rect:not([pointer-events="none"]):not([fill="transparent"]):not([fill="none"]):not([fill*="1f2937"]) {
+  fill: #0b0f19 !important;
+  stroke: #1e293b !important;
+}
+
+/* 2. Fix the Zoom & Window control boxes (the tiny light squares at top-left of canvas) */
+html.dark .MapControls button,
+html.dark button[class*="bg-white"],
+html.dark div[class*="Zoom"] button,
+html.dark span[class*="Zoom"] button,
+html.dark svg + div button,
+html.dark div[class*="Zoom"] > button {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #ffffff !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark .MapControls button:hover,
+html.dark button[class*="bg-white"]:hover {
+  background-color: #334155 !important;
+}
+
+/* 3. Fix the "Manual Calculation", "Fiber", and "Copper" active tab states */
+html.dark button[class*="bg-white"], 
+html.dark .active-tab,
+html.dark font[color],
+html.dark div[role="tab"] {
+  /* target elements acting as active white tabs */
+  background-color: #334155 !important; 
+  color: #ffffff !important;
+  border-color: #475569 !important;
+}
+
+/* Ensure selected state text is readable */
+html.dark button:has(span), html.dark label {
+  color: #f1f5f9 !important;
+}
+
+/* ==========================================
+   HARSH MATRIX LINES & BLOCK CLEANUP
+   ========================================== */
+
+/* 1. Cabinet styles - precisely target the cabinet rectangles using their fill attributes and pointer-events */
+/* Default Cabinets (originally white/ffffff) */
+html.dark svg rect[pointer-events="none"][fill="white"],
+html.dark svg rect[pointer-events="none"][fill="#ffffff"] {
+  fill: #1e293b !important;
+  stroke: #334155 !important;
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* Full Cabinets (originally light gray #f3f4f6) */
+html.dark svg rect[pointer-events="none"][fill="#f3f4f6"] {
+  fill: #1e293b !important;
+  stroke: #475569 !important;
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* Network Racks (originally light blue #dbeafe) */
+html.dark svg rect[pointer-events="none"][fill="#dbeafe"] {
+  fill: #1e3a8a !important; /* deep blue */
+  stroke: #3b82f6 !important; /* blue-500 */
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* Half Cabinets (originally light amber #fef3c7) */
+html.dark svg rect[pointer-events="none"][fill="#fef3c7"] {
+  fill: #78350f !important; /* deep amber */
+  stroke: #d97706 !important; /* amber-600 */
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* Quarter Cabinets (originally light green #d1fae5) */
+html.dark svg rect[pointer-events="none"][fill="#d1fae5"] {
+  fill: #065f46 !important; /* deep green */
+  stroke: #10b981 !important; /* green-500 */
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* 2. Fix text labels along the left side axis columns */
+html.dark svg text,
+html.dark .RoomMapContainer text {
+  fill: #64748b !important; /* Soft gray for vertical labels (GE, GB, GA...) */
+  font-weight: 500;
+  transition: fill 0.3s ease;
+}
+
+/* Keep tooltip text perfectly white */
+html.dark svg text[fill="white"] {
+  fill: #ffffff !important;
+  transition: fill 0.3s ease;
+}
+
+/* ==========================================
+   VISUAL HIERARCHY & CONTRAST IMPROVEMENTS
+   ========================================== */
+
+/* 1. Zoom control buttons (+, -, Reset) & Unselected buttons (bg-white) */
+html.dark button[class*="bg-gray-200"],
+html.dark button[class*="bg-white"] {
+  background-color: #1e293b !important; /* slate-800 */
+  border: 1px solid #334155 !important;     /* slate-700 */
+  color: #f1f5f9 !important;            /* slate-100 */
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark button[class*="bg-gray-200"]:hover,
+html.dark button[class*="bg-white"]:hover {
+  background-color: #334155 !important; /* slate-700 */
+  color: #ffffff !important;
+}
+
+/* 2. Selected buttons (e.g. active Cable Type selected) */
+html.dark button[class*="bg-blue-50"] {
+  background-color: #2563eb !important; /* solid blue-600 */
+  border-color: #3b82f6 !important;     /* blue-500 */
+  color: #ffffff !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark button[class*="bg-blue-50"]:hover {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* 3. Selected path card item in list */
+html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="px-3"]) {
+  background-color: rgba(37, 99, 235, 0.15) !important; /* Semi-transparent blue highlight */
+  border-color: #3b82f6 !important;
+  box-shadow: inset 0 0 0 1px #3b82f6 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="px-3"]) * {
+  color: #ffffff !important; /* Ensure readable text inside selected path card */
+  transition: color 0.3s ease;
+}
+
+/* 4. Path selector item hover state */
+html.dark div[class*="hover:bg-gray-50"]:hover {
+  background-color: #334155 !important;
+  transition: background-color 0.3s ease;
+}
+
+/* 5. Path selector show more/less button */
+html.dark button[class*="text-blue-600"] {
+  color: #38bdf8 !important; /* light sky blue */
+  background-color: transparent !important;
+  border-color: #334155 !important;
+}
+
+html.dark button[class*="text-blue-600"]:hover {
+  background-color: rgba(56, 189, 248, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* 6. Badges (shortest, OK, ERROR, etc.) */
+/* Success / Shortest Badges (originally bg-green-100) */
+html.dark span[class*="bg-green-100"] {
+  background-color: #065f46 !important; /* emerald-900 */
+  color: #34d399 !important;           /* emerald-400 */
+  font-weight: 600 !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Neutral Muted Badges (originally bg-gray-100) */
+html.dark span[class*="bg-gray-100"] {
+  background-color: #334155 !important; /* slate-700 */
+  color: #94a3b8 !important;           /* slate-400 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Error Badges (originally bg-red-100 text-red-800 e.g. CSV status badge) */
+html.dark span[class*="bg-red-100"] {
+  background-color: #7f1d1d !important; /* deep red-900 */
+  color: #fca5a5 !important;           /* light red-300 */
+  font-weight: 600 !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 7. Alert / Notification Banners & CSV Error Rows */
+/* bg-red-50 Error Rows/Banners */
+html.dark tr[class*="bg-red-50"],
+html.dark tr.bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  transition: background-color 0.3s ease;
+}
+
+html.dark tr[class*="bg-red-50"] td,
+html.dark tr.bg-red-50 td {
+  color: #fca5a5 !important;
+  transition: color 0.3s ease;
+}
+
+html.dark div[class*="bg-red-50"] {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark div[class*="bg-red-50"] * {
+  color: #fca5a5 !important;
+  transition: color 0.3s ease;
+}
+
+/* bg-yellow-50 Undo banners */
+html.dark div[class*="bg-yellow-50"] {
+  background-color: rgba(234, 179, 8, 0.1) !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+  color: #fde047 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark div[class*="bg-yellow-50"] * {
+  color: #fde047 !important;
+  transition: color 0.3s ease;
+}
+
+/* bg-blue-50 Edit row alerts */
+html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="hover"]):not([class*="cursor"]) {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="hover"]):not([class*="cursor"]) * {
+  color: #93c5fd !important;
+  transition: color 0.3s ease;
+}
+
+/* 8. Map Controls & Legend Panel fixes */
+/* bg-gray-300 segment indicator in map controls legend list */
+html.dark div[class*="bg-gray-300"].w-8 {
+  background-color: #64748b !important; /* Represents muted line */
+}
+
+/* Legend panel swatches inside MapControls matching dark map representation */
+html.dark div[class*="bg-gray-100"].w-4 {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+html.dark div[class*="bg-blue-100"].w-4 {
+  background-color: #1e3a8a !important;
+  border-color: #3b82f6 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+html.dark div[class*="bg-amber-100"].w-4 {
+  background-color: #78350f !important;
+  border-color: #d97706 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+html.dark div[class*="bg-green-100"].w-4 {
+  background-color: #065f46 !important;
+  border-color: #10b981 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Keyboard shortcut kbd elements styling */
+html.dark kbd {
+  background-color: #334155 !important;
+  border: 1px solid #475569 !important;
+  color: #cbd5e1 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* 9. Text colors hierarchy and readability */
+html.dark .text-gray-900,
+html.dark span[class*="text-gray-900"],
+html.dark div[class*="text-gray-900"] {
+  color: #ffffff !important; /* Bold headings and names */
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700,
+html.dark span[class*="text-gray-700"],
+html.dark label[class*="text-gray-700"] {
+  color: #cbd5e1 !important; /* Standard labels & text */
+}
+
+html.dark .text-gray-600,
+html.dark span[class*="text-gray-600"],
+html.dark div[class*="text-gray-600"] {
+  color: #94a3b8 !important; /* Intermediate subtexts */
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark span[class*="text-gray-400"],
+html.dark div[class*="text-gray-400"],
+html.dark p[class*="text-gray-500"] {
+  color: #64748b !important; /* Muted notes / breakdowns */
+}
+
+/* ==========================================
+   PRINT STYLES
+   ========================================== */
+
+@media print {
+  /* Hide UI chrome */
+  .tab-nav,
+  .RoomMapContainer,
+  .MapControls,
+  .SessionsPanel,
+  .CsvImport,
+  .CabinetInput,
+  .CableTypeSelector,
+  .PathSelector,
+  .SlackInput,
+  .CalculateButton,
+  .ThemeToggle,
+  button:not(.print-button),
+  input[type="checkbox"],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Show only results table and print header */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid black;
+  }
+
+  .print-header h1 {
+    font-size: 18pt;
+    margin-bottom: 10px;
+  }
+
+  .print-header .print-meta {
+    font-size: 10pt;
+    color: black;
+  }
+
+  /* Results table for print */
+  .ResultsTable {
+    border: 1px solid black !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .ResultsTable > div:first-child {
+    background: white !important;
+    border-bottom: 1px solid black !important;
+  }
+
+  .ResultsTable > div:last-child > div {
+    border-bottom: 1px solid black !important;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure text is black on white */
+  .ResultsTable,
+  .ResultsTable * {
+    background: white !important;
+    color: black !important;
+    border-color: black !important;
+  }
+
+  /* Hide action buttons in print */
+  .ResultsTable button:not(.print-button) {
+    display: none !important;
+  }
+
+  /* Hide checkboxes */
+  .ResultsTable input[type="checkbox"] {
+    display: none !important;
+  }
+
+  /* Hide Clear All link */
+  .ResultsTable > button {
+    display: none !important;
+  }
 }

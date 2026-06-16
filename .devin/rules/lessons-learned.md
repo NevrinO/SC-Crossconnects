@@ -333,3 +333,32 @@ This file contains generalized architectural guardrails derived from past agent 
 ### 77. Keyboard Shortcut Conflict Detection
 - **Rule**: When implementing keyboard shortcuts, verify that no key is bound to multiple actions in the same scope.
 - **Guardrail**: Keyboard handlers that check `e.key` must ensure each key maps to exactly one action. If multiple `if (e.key === 'X')` conditions exist for the same key, the first one will always execute and return early, making subsequent shortcuts non-functional. This is especially problematic when shortcuts are documented in UI legends or help text. Before committing keyboard handler changes, audit the handler for duplicate key bindings and resolve conflicts by reassigning keys or combining actions.
+
+### 78. CSV/Text Export Must Escape Special Characters
+- **Rule**: When exporting data to CSV or text formats, always properly escape special characters (quotes, newlines, commas) according to the format specification.
+- **Guardrail**: Simply wrapping values in quotes is insufficient for CSV export. If a value contains a quote, newline, or the delimiter character, the output will be malformed. Use proper CSV escaping per RFC 4180 (double quotes for embedded quotes, escape newlines, etc.) or use a well-tested CSV library. For text exports, ensure newlines and other control characters are handled appropriately. Failing to escape properly creates data integrity issues where exported files cannot be parsed by other applications.
+
+### 79. Undo/Redo Systems Must Track All State-Mutating Operations
+- **Rule**: When implementing an undo/redo system, ensure every operation that modifies the tracked state is recorded in the history stack.
+- **Guardrail**: If some operations (e.g., bulk delete, import, session load) modify state without being tracked, users cannot undo those actions, creating inconsistent UX. Either track all operations or clearly document which operations are undoable and disable undo for non-tracked operations. A partial undo system that only tracks some operations is confusing and leads to user frustration when they cannot undo an action they expect to be reversible.
+
+### 80. Undo Operations Must Use Stable Identifiers, Not Positional Assumptions
+- **Rule**: When implementing undo for array-based state, use stable identifiers (e.g., IDs, unique keys) rather than assuming the last item is the one that was added.
+- **Guardrail**: Using `array.slice(0, -1)` to undo an add operation assumes the last item is always the one that was added. If other operations (delete, reorder, import) occur after the add but before undo, the wrong item will be removed. Store the index or ID of the added item in the undo action, or use a stable identifier to locate and remove the correct item. Positional assumptions create data corruption bugs when the array state changes between the action and the undo.
+
+### 81. Theme Detection Should Use MutationObserver or Context, Not Storage Events
+- **Rule**: When detecting theme or class changes on the document element, use MutationObserver or a React context provider, not the storage event.
+- **Guardrail**: The `storage` event only fires when localStorage is modified in a different tab/window, not in the same tab. If a user toggles the theme in the same tab, components listening to the storage event will not update. Use MutationObserver to watch for class changes on `document.documentElement`, or use a React context provider that notifies all subscribers when the theme changes. The storage event is only appropriate for cross-tab synchronization, not same-tab state changes.
+
+### 82. useEffect Dependencies Must Include All Referenced Values
+- **Rule**: When using useEffect, ensure all values referenced in the effect are included in the dependency array, or use useCallback/useMemo to stabilize functions.
+- **Guardrail**: If an effect calls a function that is not in the dependency array, the effect may use a stale closure of that function. This leads to bugs where the effect uses outdated logic or state. Either add the function to the dependency array (and use useCallback to prevent unnecessary re-runs), or use a ref pattern if the function should not trigger re-runs. React's exhaustive-deps ESLint rule exists to catch this issue for a reason—ignoring it creates subtle bugs.
+
+### 83. Undo Timeout Design Should Not Lose Earlier Operations
+- **Rule**: When implementing auto-hide timeouts for undo notifications, ensure each operation gets its own timeout or use a queue-based system.
+- **Guardrail**: If every operation clears the previous timeout and starts a new one, rapid consecutive operations will cause earlier undo opportunities to be lost before the user can act on them. This creates poor UX where users have a narrow window to undo and cannot recover from accidental rapid actions. Either use a queue where each operation has its own independent timeout, or remove auto-hide entirely and let users manually dismiss notifications. The undo system should be reliable, not fragile under normal usage patterns.
+
+### 84. Broad Wildcard CSS Selectors in Dark Mode Overrides
+- **Rule**: Avoid overly broad wildcard CSS selectors (e.g. `div[class*="bg-gray-"]` or `span` with `!important`) for dark mode overrides, as they override non-layout/state-specific elements (like indicators, alerts, status badges, and swatches) resulting in unreadable low-contrast text or invisible elements.
+- **Guardrail**: Use specific, scoped, or semantic classes for theme overrides rather than brute-force class wildcards. If global wildcards are necessary, explicitly exempt or override state-specific colors (such as alerts `bg-red-50`, `bg-yellow-50`, and status badges `bg-red-100`, `bg-green-100`) to guarantee contrast and visual correctness under all modes. Ensure that legend swatches are matched to their corresponding interactive elements' overridden colors to avoid informational mismatches.
+

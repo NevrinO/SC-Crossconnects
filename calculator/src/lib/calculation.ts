@@ -244,6 +244,7 @@ export function calculateManual(
   const lengthM = parseFloat(roundFloat(convertFeetToMeters(len), 0.25, 2));
 
   return {
+    id: crypto.randomUUID(),
     startCab: start.raw,
     endCab: end.raw,
     lengthFt,

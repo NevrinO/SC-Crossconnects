@@ -44,6 +44,7 @@ export interface Room {
 }
 
 export interface CalculationResult {
+  id: string; // Unique identifier for undo tracking
   startCab: string;
   endCab: string;
   lengthFt: number;
@@ -53,6 +54,7 @@ export interface CalculationResult {
   sameX: boolean;
   cableType: 'fiber' | 'copper';
   turnCount?: number;
+  qty?: number; // Quantity field (defaults to 1 if not provided, valid range: 1-99)
 }
 
 export interface CabinetInfo {

@@ -8,6 +8,7 @@ interface RoomMapContainerProps {
   startCabinet?: string
   endCabinet?: string
   selectedPathSegments?: import('../types/room').PathSegment[]
+  diversePathSegments?: import('../types/room').PathSegment[]
   cableType?: 'fiber' | 'copper' | null
   onSelectStart: (cabinetId: string) => void
   onSelectEnd: (cabinetId: string) => void
@@ -18,6 +19,7 @@ interface RoomMapContainerProps {
     orientation: 'numbers-vertical' | 'numbers-horizontal'
     startCorner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     selectedPathSegments?: import('../types/room').PathSegment[]
+    diversePathSegments?: import('../types/room').PathSegment[]
     cableType?: 'fiber' | 'copper' | null
     startCabinet?: string
     endCabinet?: string
@@ -44,13 +46,14 @@ export function RoomMapContainer({
   startCabinet,
   endCabinet,
   selectedPathSegments,
+  diversePathSegments,
   cableType,
   onSelectStart,
   onSelectEnd,
   onCalculate,
   children,
 }: RoomMapContainerProps) {
-  const [zoom, setZoom] = useState(1)
+  const [zoom, setZoom] = useState(0.8)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
@@ -457,6 +460,7 @@ export function RoomMapContainer({
               orientation,
               startCorner,
               selectedPathSegments,
+              diversePathSegments,
               cableType,
               startCabinet,
               endCabinet,

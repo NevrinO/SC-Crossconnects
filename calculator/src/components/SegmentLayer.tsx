@@ -9,6 +9,9 @@ interface SegmentLayerProps {
   orientation: 'numbers-vertical' | 'numbers-horizontal'
   segments: PathSegment[]
   selectedPathSegments?: PathSegment[]
+  diversePathSegments?: PathSegment[]
+  selectedPathNodes?: string[]
+  diversePathNodes?: string[]
   cableType?: 'fiber' | 'copper' | null
   showPathTooltips?: boolean
 }
@@ -19,16 +22,46 @@ export function SegmentLayer({
   orientation,
   segments,
   selectedPathSegments = [],
+  diversePathSegments = [],
+  selectedPathNodes = [],
+  diversePathNodes = [],
   cableType,
   showPathTooltips = false,
 }: SegmentLayerProps) {
   const [hoveredSegment, setHoveredSegment] = useState<PathSegment | null>(null)
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
 
-  // Determine segment visual state
-  const getSegmentState = (segment: PathSegment): 'muted' | 'available' | 'selected' => {
+  // Determine segment visual state based on tile coverage
+  const getSegmentState = (segment: PathSegment): 'muted' | 'available' | 'selected' | 'diverse' | 'shared' => {
+    // When path nodes are available, don't highlight segments - let path edges show the actual route
+    if (selectedPathNodes.length > 0 || diversePathNodes.length > 0) {
+      // Only show segments as available or muted, not selected/diverse
+      if (cableType) {
+        const isFiber = cableType === 'fiber'
+        const hasFiber = segment.fiberHeight !== null
+        const hasCopper = segment.copperHeight !== null
+
+        if (isFiber && hasFiber) return 'available'
+        if (!isFiber && hasCopper) return 'available'
+      }
+      return 'muted'
+    }
+
+    // Legacy behavior when no path nodes: highlight segments by ID
+    const inSelected = selectedPathSegments.some(s => s.id === segment.id);
+    const inDiverse = diversePathSegments.some(s => s.id === segment.id);
+    
+    if (inSelected && inDiverse) {
+      return 'shared';
+    }
+    
+    // Check if segment is in diverse path only
+    if (inDiverse) {
+      return 'diverse';
+    }
+    
     // Check if segment is in selected path
-    if (selectedPathSegments.some(s => s.id === segment.id)) {
+    if (inSelected) {
       return 'selected'
     }
 
@@ -45,6 +78,33 @@ export function SegmentLayer({
     return 'muted'
   }
 
+  // Render path edges between consecutive nodes
+  const renderPathEdges = (nodes: string[], color: string, strokeWidth: number, opacity: number) => {
+    if (nodes.length < 2) return null;
+    
+    return nodes.slice(0, -1).map((node, i) => {
+      const nextNode = nodes[i + 1];
+      const startPos = gridToScreenCenter({ x: node.split('-')[0], y: parseInt(node.split('-')[1]) }, bounds, cellSize, orientation);
+      const endPos = gridToScreenCenter({ x: nextNode.split('-')[0], y: parseInt(nextNode.split('-')[1]) }, bounds, cellSize, orientation);
+      
+      if (!startPos || !endPos) return null;
+      
+      return (
+        <line
+          key={`${node}-${nextNode}`}
+          x1={startPos.x}
+          y1={startPos.y}
+          x2={endPos.x}
+          y2={endPos.y}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          opacity={opacity}
+          strokeLinecap="round"
+        />
+      );
+    });
+  };
+
   // Get segment color based on type (matching config tool)
   const getSegmentColor = (segment: PathSegment): string => {
     if (segment.type === 'fiber-path') return '#3b82f6' // blue-500
@@ -53,9 +113,13 @@ export function SegmentLayer({
   }
 
   // Get segment style based on state
-  const getSegmentStyle = (state: 'muted' | 'available' | 'selected', segment: PathSegment, zoom: number) => {
+  const getSegmentStyle = (state: 'muted' | 'available' | 'selected' | 'diverse' | 'shared', segment: PathSegment, zoom: number) => {
     const baseColor = getSegmentColor(segment)
     switch (state) {
+      case 'shared':
+        return { stroke: '#f59e0b', strokeWidth: 5 * zoom, opacity: 1 } // amber-500 for shared segments
+      case 'diverse':
+        return { stroke: '#8b5cf6', strokeWidth: 5 * zoom, opacity: 1 } // violet-500 for diverse-only segments
       case 'selected':
         return { stroke: baseColor, strokeWidth: 5 * zoom, opacity: 1 }
       case 'available':
@@ -142,6 +206,18 @@ export function SegmentLayer({
           )
         })}
       </g>
+      {/* Render selected path edges */}
+      {selectedPathNodes.length > 0 && (
+        <g>
+          {renderPathEdges(selectedPathNodes, '#3b82f6', 5 * zoom, 1)}
+        </g>
+      )}
+      {/* Render diverse path edges */}
+      {diversePathNodes.length > 0 && (
+        <g>
+          {renderPathEdges(diversePathNodes, '#8b5cf6', 5 * zoom, 1)}
+        </g>
+      )}
       {hoveredSegment && mousePos && showPathTooltips && createPortal(
         <div
           style={{
