@@ -22,6 +22,7 @@ import { CabinetLayer } from './components/CabinetLayer';
 import { SegmentLayer } from './components/SegmentLayer';
 import { PathAnimationLayer } from './components/PathAnimationLayer';
 import { ThemeToggle } from './components/ThemeToggle';
+import { HelpModal } from './components/HelpModal';
 
 export default function App() {
   const [loadError] = useState<string | null>(() => {
@@ -38,7 +39,7 @@ export default function App() {
     initializeSessionCleanup();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'csv' | 'sessions' | 'uheight'>('manual');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [startCabinet, setStartCabinet] = useState('');
   const [endCabinet, setEndCabinet] = useState('');
@@ -50,6 +51,7 @@ export default function App() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [currentSessionName, setCurrentSessionName] = useState<string | null>(null);
   const [diversePath, setDiversePath] = useState<import('./lib/pathfinding').PathResult | null>(null);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   
   // Undo system: tracks operations to support single-level undo
   // Note: This is a single-level undo (no redo). For multi-undo, would need a stack.
@@ -246,6 +248,12 @@ export default function App() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cross Connect Calculator</h1>
         <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            Help
+          </button>
           <ThemeToggle />
           <Link
             to="/validate"
@@ -299,6 +307,16 @@ export default function App() {
           }`}
         >
           Saved Sessions
+        </button>
+        <button
+          onClick={() => setActiveTab('uheight')}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'uheight'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          U-Height Calc
         </button>
       </div>
 
@@ -419,6 +437,8 @@ export default function App() {
                           segments={selectedRoom.pathSegments}
                           selectedPathSegments={selectedPathSegments}
                           diversePathSegments={diversePathSegments}
+                          selectedPathNodes={selectedPath?.nodes}
+                          diversePathNodes={diversePath?.nodes}
                           cableType={cableType}
                           showPathTooltips={showPathTooltips}
                         />
@@ -504,6 +524,21 @@ export default function App() {
           setShowSaveDialog={setShowSaveDialog}
         />
       )}
+
+      {activeTab === 'uheight' && (
+        <div className="rounded-lg border border-gray-200 bg-white p-12 shadow-sm text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Intra-Cabinet U-Height Calculator</h2>
+          <p className="text-gray-600 mb-6">
+            This feature is coming soon. It will help you calculate cable lengths for connections within a single cabinet,
+            accounting for U-positions, side routing, and switch port mappings.
+          </p>
+          <div className="inline-block rounded-md bg-gray-100 px-4 py-2 text-sm text-gray-700">
+            Full specification in progress — check back later
+          </div>
+        </div>
+      )}
+
+      <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 }

@@ -192,9 +192,15 @@ function getTilesBetween(nodeId1: string, nodeId2: string): Set<string> {
 
 /**
  * Get all intermediate tiles traversed by a full path.
+ * Includes all nodes in the path.
  */
-function getPathTiles(nodes: string[]): Set<string> {
+export function getPathTiles(nodes: string[]): Set<string> {
   const tiles = new Set<string>();
+  // Add all nodes to the tile set
+  for (const node of nodes) {
+    tiles.add(node);
+  }
+  // Add intermediate tiles between consecutive nodes
   for (let i = 0; i < nodes.length - 1; i++) {
     const edgeTiles = getTilesBetween(nodes[i], nodes[i + 1]);
     for (const tile of edgeTiles) tiles.add(tile);
@@ -233,6 +239,33 @@ export function computeSharedSegments(path1: PathResult, path2: PathResult): str
     }
   }
   return shared;
+}
+
+/**
+ * Compute shared tiles between two paths.
+ * Returns the count of tiles that are traversed by both paths.
+ * Excludes start and end tiles since they're always shared.
+ */
+export function computeSharedTiles(path1: PathResult, path2: PathResult): number {
+  const tiles1 = getPathTiles(path1.nodes);
+  const tiles2 = getPathTiles(path2.nodes);
+  
+  // Exclude start and end tiles from both sets (always shared)
+  const startTile = path1.nodes[0];
+  const endTile = path1.nodes[path1.nodes.length - 1];
+  
+  tiles1.delete(startTile);
+  tiles1.delete(endTile);
+  tiles2.delete(startTile);
+  tiles2.delete(endTile);
+  
+  let sharedCount = 0;
+  for (const tile of tiles1) {
+    if (tiles2.has(tile)) {
+      sharedCount++;
+    }
+  }
+  return sharedCount;
 }
 
 /**

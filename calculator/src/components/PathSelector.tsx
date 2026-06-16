@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { PathResult } from '../lib/pathfinding';
-import { computeSharedSegments } from '../lib/pathfinding';
+import { computeSharedTiles, getPathTiles } from '../lib/pathfinding';
+import { TooltipIcon } from './TooltipIcon';
 
 interface PathSelectorProps {
   paths: PathResult[];
@@ -16,18 +17,27 @@ const INITIAL_LIMIT = 4;
 export default function PathSelector({ paths, selectedPath, onSelect, onDiversePathSelect, isCalculating, error }: PathSelectorProps) {
   const [showAll, setShowAll] = useState(false);
   const [diversePath, setDiversePath] = useState<PathResult | null>(null);
+  const [diverseMode, setDiverseMode] = useState(false);
 
   // Reset collapsed state when paths change (new calculation)
   // Note: usePathCalculation always creates new array references, so this triggers correctly
   useEffect(() => {
     setShowAll(false);
     setDiversePath(null);
+    setDiverseMode(false);
   }, [paths]);
 
   // Notify parent when diverse path changes
   useEffect(() => {
     onDiversePathSelect?.(diversePath);
   }, [diversePath, onDiversePathSelect]);
+
+  // Clear diverse path when diverse mode is disabled
+  useEffect(() => {
+    if (!diverseMode) {
+      setDiversePath(null);
+    }
+  }, [diverseMode]);
 
   const visiblePaths = showAll ? paths : paths.slice(0, INITIAL_LIMIT);
   const hasMore = paths.length > INITIAL_LIMIT;
@@ -36,13 +46,17 @@ export default function PathSelector({ paths, selectedPath, onSelect, onDiverseP
   const getDiversityScore = (path: PathResult): string => {
     if (!selectedPath || path === selectedPath) return '';
     
-    const sharedSegments = computeSharedSegments(selectedPath, path);
-    const totalSegments = path.segments?.length ?? 0;
-    const sharedCount = sharedSegments.length;
+    const sharedTiles = computeSharedTiles(selectedPath, path);
+    const allTiles = getPathTiles(path.nodes);
     
-    if (totalSegments === 0) return '';
+    // Exclude start and end tiles from total (always shared)
+    const totalTiles = allTiles.size - 2; // Always subtract 2 for start and end
     
-    const sharedPercent = Math.round((sharedCount / totalSegments) * 100);
+    const sharedCount = sharedTiles;
+    
+    if (totalTiles <= 0) return '';
+    
+    const sharedPercent = Math.round((sharedCount / totalTiles) * 100);
     
     if (sharedPercent === 0) return 'Fully diverse';
     if (sharedPercent > 50) return `Low diversity (${sharedPercent}% shared)`;
@@ -52,13 +66,17 @@ export default function PathSelector({ paths, selectedPath, onSelect, onDiverseP
   const getDiversityBadgeColor = (path: PathResult): string => {
     if (!selectedPath || path === selectedPath) return '';
     
-    const sharedSegments = computeSharedSegments(selectedPath, path);
-    const totalSegments = path.segments?.length ?? 0;
-    const sharedCount = sharedSegments.length;
+    const sharedTiles = computeSharedTiles(selectedPath, path);
+    const allTiles = getPathTiles(path.nodes);
     
-    if (totalSegments === 0) return '';
+    // Exclude start and end tiles from total (always shared)
+    const totalTiles = allTiles.size - 2; // Always subtract 2 for start and end
     
-    const sharedPercent = (sharedCount / totalSegments) * 100;
+    const sharedCount = sharedTiles;
+    
+    if (totalTiles <= 0) return '';
+    
+    const sharedPercent = (sharedCount / totalTiles) * 100;
     
     if (sharedPercent === 0) return 'bg-green-100 text-green-700';
     if (sharedPercent > 50) return 'bg-red-100 text-red-700';
@@ -66,33 +84,50 @@ export default function PathSelector({ paths, selectedPath, onSelect, onDiverseP
   };
 
   const handlePathClick = (path: PathResult) => {
-    // If clicking the same path that's already diverse, clear diverse selection
-    if (diversePath === path) {
-      setDiversePath(null);
-      return;
-    }
-    
-    // If clicking the primary path, set it as primary (existing behavior)
-    if (path === selectedPath) {
-      onSelect(path);
-      setDiversePath(null);
-      return;
-    }
-    
-    // Otherwise, set as diverse path (if primary is already selected)
-    if (selectedPath) {
-      setDiversePath(path);
+    if (diverseMode) {
+      // Diverse mode: clicking a path sets it as diverse (if primary is selected)
+      if (diversePath === path) {
+        setDiversePath(null);
+        return;
+      }
+      
+      if (path === selectedPath) {
+        onSelect(path);
+        setDiversePath(null);
+        return;
+      }
+      
+      if (selectedPath) {
+        setDiversePath(path);
+      } else {
+        onSelect(path);
+      }
     } else {
-      // No primary selected yet, set as primary
+      // Normal mode: clicking any path sets it as primary
       onSelect(path);
     }
   };
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-gray-700">
-        Select Path (auto-calculated when cabinets entered)
-      </label>
+      <div className="flex items-center gap-1">
+        <label className="text-sm font-medium text-gray-700">
+          Select Path (auto-calculated when cabinets entered)
+        </label>
+        <TooltipIcon content="Each path is a physical tray route through the room. The calculator auto-suggests ranked paths — shortest is pre-selected. Pick a different path for redundancy." />
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="diverse-mode"
+          checked={diverseMode}
+          onChange={(e) => setDiverseMode(e.target.checked)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+        />
+        <label htmlFor="diverse-mode" className="text-sm text-gray-600">
+          Enable diverse path selection (pick two paths for redundancy)
+        </label>
+      </div>
       {isCalculating && (
         <span className="text-xs text-gray-500">Calculating paths...</span>
       )}

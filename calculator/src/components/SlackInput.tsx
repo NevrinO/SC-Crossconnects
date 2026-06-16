@@ -1,4 +1,5 @@
 import { CONSTANTS } from '../lib/constants';
+import { TooltipIcon } from './TooltipIcon';
 
 interface SlackInputProps {
   value: number;
@@ -8,9 +9,12 @@ interface SlackInputProps {
 export default function SlackInput({ value, onChange }: SlackInputProps) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="slack" className="text-sm font-medium text-gray-700">
-        Slack (ft)
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor="slack" className="text-sm font-medium text-gray-700">
+          Slack (ft)
+        </label>
+        <TooltipIcon content="Extra feet added to the calculated length for service loops, dressing, or drops to lower U-positions. 0 = tight run." />
+      </div>
       <input
         id="slack"
         type="number"

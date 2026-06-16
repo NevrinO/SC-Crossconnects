@@ -4,6 +4,11 @@
 
 body {
   @apply bg-gray-50 text-gray-900;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @keyframes pulse {
@@ -29,6 +34,7 @@ html.dark div[class*="bg-slate-"] {
   background-color: #1e293b !important; /* slate-800 */
   border-color: #334155 !important;     /* slate-700 */
   color: #f1f5f9 !important;            /* slate-100 */
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* 3. Specialized Panels (Tables, Controls, Sidebars) */
@@ -45,6 +51,7 @@ html.dark .PathSelector {
   background-color: #1e293b !important;
   border-color: #334155 !important;
   color: #f1f5f9 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* 4. Form Inputs, Inputs, Buttons, CSV Imports */
@@ -56,6 +63,7 @@ html.dark .CsvImport {
   background-color: #0f172a !important;
   border-color: #475569 !important;
   color: #ffffff !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark input::placeholder {
@@ -73,19 +81,24 @@ html.dark p, html.dark span, html.dark td, html.dark label {
 /* 6. Interactive SVG Layer Mapping */
 html.dark svg {
   background-color: #0f172a !important;
+  transition: background-color 0.3s ease;
 }
 html.dark svg g[id*="grid"], html.dark svg .GridLayer line, html.dark svg .GridLayer path {
   stroke: #334155 !important; /* Dark Grid */
+  transition: stroke 0.3s ease;
 }
 html.dark svg g[id*="cabinet"], html.dark svg .CabinetLayer rect, html.dark svg .CabinetLayer path {
   stroke: #64748b !important; /* Dark Cabinets */
   fill: #1e293b !important;
+  transition: stroke 0.3s ease, fill 0.3s ease;
 }
 html.dark svg g[id*="segment"], html.dark svg .SegmentLayer path {
   stroke: #38bdf8 !important; /* Vibrant interactive paths */
+  transition: stroke 0.3s ease;
 }
 html.dark svg g[id*="animation"], html.dark svg .PathAnimationLayer {
   stroke: #f43f5e !important;
+  transition: stroke 0.3s ease;
 }
 
 /* 7. Toggle Button Utility */
@@ -124,6 +137,7 @@ html.dark div[class*="Zoom"] > button {
   background-color: #1e293b !important;
   border: 1px solid #334155 !important;
   color: #ffffff !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark .MapControls button:hover,
@@ -157,30 +171,35 @@ html.dark svg rect[pointer-events="none"][fill="white"],
 html.dark svg rect[pointer-events="none"][fill="#ffffff"] {
   fill: #1e293b !important;
   stroke: #334155 !important;
+  transition: fill 0.3s ease, stroke 0.3s ease;
 }
 
 /* Full Cabinets (originally light gray #f3f4f6) */
 html.dark svg rect[pointer-events="none"][fill="#f3f4f6"] {
   fill: #1e293b !important;
   stroke: #475569 !important;
+  transition: fill 0.3s ease, stroke 0.3s ease;
 }
 
 /* Network Racks (originally light blue #dbeafe) */
 html.dark svg rect[pointer-events="none"][fill="#dbeafe"] {
   fill: #1e3a8a !important; /* deep blue */
   stroke: #3b82f6 !important; /* blue-500 */
+  transition: fill 0.3s ease, stroke 0.3s ease;
 }
 
 /* Half Cabinets (originally light amber #fef3c7) */
 html.dark svg rect[pointer-events="none"][fill="#fef3c7"] {
   fill: #78350f !important; /* deep amber */
   stroke: #d97706 !important; /* amber-600 */
+  transition: fill 0.3s ease, stroke 0.3s ease;
 }
 
 /* Quarter Cabinets (originally light green #d1fae5) */
 html.dark svg rect[pointer-events="none"][fill="#d1fae5"] {
   fill: #065f46 !important; /* deep green */
   stroke: #10b981 !important; /* green-500 */
+  transition: fill 0.3s ease, stroke 0.3s ease;
 }
 
 /* 2. Fix text labels along the left side axis columns */
@@ -188,11 +207,13 @@ html.dark svg text,
 html.dark .RoomMapContainer text {
   fill: #64748b !important; /* Soft gray for vertical labels (GE, GB, GA...) */
   font-weight: 500;
+  transition: fill 0.3s ease;
 }
 
 /* Keep tooltip text perfectly white */
 html.dark svg text[fill="white"] {
   fill: #ffffff !important;
+  transition: fill 0.3s ease;
 }
 
 /* ==========================================
@@ -205,6 +226,7 @@ html.dark button[class*="bg-white"] {
   background-color: #1e293b !important; /* slate-800 */
   border: 1px solid #334155 !important;     /* slate-700 */
   color: #f1f5f9 !important;            /* slate-100 */
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark button[class*="bg-gray-200"]:hover,
@@ -218,6 +240,7 @@ html.dark button[class*="bg-blue-50"] {
   background-color: #2563eb !important; /* solid blue-600 */
   border-color: #3b82f6 !important;     /* blue-500 */
   color: #ffffff !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark button[class*="bg-blue-50"]:hover {
@@ -229,15 +252,18 @@ html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="px-3"]) {
   background-color: rgba(37, 99, 235, 0.15) !important; /* Semi-transparent blue highlight */
   border-color: #3b82f6 !important;
   box-shadow: inset 0 0 0 1px #3b82f6 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="px-3"]) * {
   color: #ffffff !important; /* Ensure readable text inside selected path card */
+  transition: color 0.3s ease;
 }
 
 /* 4. Path selector item hover state */
 html.dark div[class*="hover:bg-gray-50"]:hover {
   background-color: #334155 !important;
+  transition: background-color 0.3s ease;
 }
 
 /* 5. Path selector show more/less button */
@@ -258,12 +284,14 @@ html.dark span[class*="bg-green-100"] {
   background-color: #065f46 !important; /* emerald-900 */
   color: #34d399 !important;           /* emerald-400 */
   font-weight: 600 !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Neutral Muted Badges (originally bg-gray-100) */
 html.dark span[class*="bg-gray-100"] {
   background-color: #334155 !important; /* slate-700 */
   color: #94a3b8 !important;           /* slate-400 */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Error Badges (originally bg-red-100 text-red-800 e.g. CSV status badge) */
@@ -271,6 +299,7 @@ html.dark span[class*="bg-red-100"] {
   background-color: #7f1d1d !important; /* deep red-900 */
   color: #fca5a5 !important;           /* light red-300 */
   font-weight: 600 !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* 7. Alert / Notification Banners & CSV Error Rows */
@@ -278,21 +307,25 @@ html.dark span[class*="bg-red-100"] {
 html.dark tr[class*="bg-red-50"],
 html.dark tr.bg-red-50 {
   background-color: rgba(239, 68, 68, 0.1) !important;
+  transition: background-color 0.3s ease;
 }
 
 html.dark tr[class*="bg-red-50"] td,
 html.dark tr.bg-red-50 td {
   color: #fca5a5 !important;
+  transition: color 0.3s ease;
 }
 
 html.dark div[class*="bg-red-50"] {
   background-color: rgba(239, 68, 68, 0.15) !important;
   border: 1px solid rgba(239, 68, 68, 0.3) !important;
   color: #fca5a5 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark div[class*="bg-red-50"] * {
   color: #fca5a5 !important;
+  transition: color 0.3s ease;
 }
 
 /* bg-yellow-50 Undo banners */
@@ -300,10 +333,12 @@ html.dark div[class*="bg-yellow-50"] {
   background-color: rgba(234, 179, 8, 0.1) !important;
   border: 1px solid rgba(234, 179, 8, 0.3) !important;
   color: #fde047 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark div[class*="bg-yellow-50"] * {
   color: #fde047 !important;
+  transition: color 0.3s ease;
 }
 
 /* bg-blue-50 Edit row alerts */
@@ -311,10 +346,12 @@ html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="hover"]):n
   background-color: rgba(59, 130, 246, 0.1) !important;
   border: 1px solid rgba(59, 130, 246, 0.3) !important;
   color: #93c5fd !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 html.dark div[class*="bg-blue-50"]:not([pointer-events]):not([class*="hover"]):not([class*="cursor"]) * {
   color: #93c5fd !important;
+  transition: color 0.3s ease;
 }
 
 /* 8. Map Controls & Legend Panel fixes */
@@ -327,21 +364,25 @@ html.dark div[class*="bg-gray-300"].w-8 {
 html.dark div[class*="bg-gray-100"].w-4 {
   background-color: #1e293b !important;
   border-color: #475569 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 html.dark div[class*="bg-blue-100"].w-4 {
   background-color: #1e3a8a !important;
   border-color: #3b82f6 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 html.dark div[class*="bg-amber-100"].w-4 {
   background-color: #78350f !important;
   border-color: #d97706 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 html.dark div[class*="bg-green-100"].w-4 {
   background-color: #065f46 !important;
   border-color: #10b981 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Keyboard shortcut kbd elements styling */
@@ -349,6 +390,7 @@ html.dark kbd {
   background-color: #334155 !important;
   border: 1px solid #475569 !important;
   color: #cbd5e1 !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* 9. Text colors hierarchy and readability */

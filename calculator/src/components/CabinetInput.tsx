@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { validateRackLocationInput, getCabType, parseCabinetInput } from '../lib/calculation';
 import type { CabinetInfo, Room } from '../types/room';
+import { TooltipIcon } from './TooltipIcon';
 
 interface CabinetInputProps {
   label: string;
@@ -58,7 +59,10 @@ export default function CabinetInput({ label, value, onChange, room }: CabinetIn
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center gap-1">
+        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <TooltipIcon content="Format: AB123 · Half-cab: AB123A or AB123B · Quarter-cab: AB123A–AB123D · Network rack: same format, detected automatically" />
+      </div>
       <div className="relative">
         <input
           type="text"

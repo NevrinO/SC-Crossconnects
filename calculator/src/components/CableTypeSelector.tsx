@@ -1,3 +1,5 @@
+import { TooltipIcon } from './TooltipIcon';
+
 interface CableTypeSelectorProps {
   value: 'fiber' | 'copper' | null;
   onChange: (type: 'fiber' | 'copper') => void;
@@ -6,7 +8,10 @@ interface CableTypeSelectorProps {
 export default function CableTypeSelector({ value, onChange }: CableTypeSelectorProps) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-gray-700">Cable Type</label>
+      <div className="flex items-center gap-1">
+        <label className="text-sm font-medium text-gray-700">Cable Type</label>
+        <TooltipIcon content="Fiber = optical fiber runs (lower tray). Copper = copper patch runs (upper tray). Affects which tray height is used in the length calculation." />
+      </div>
       <div className="flex gap-2">
         <button
           type="button"
