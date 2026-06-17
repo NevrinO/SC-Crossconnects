@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Room } from '../types/editor'
+import { Room } from '../../types/room'
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string'
 
 const STORAGE_KEY = 'config-tool-backup'

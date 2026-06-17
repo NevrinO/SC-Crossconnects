@@ -1,4 +1,4 @@
-import { Room, PathSegment, CoordinateFormat } from '../types/editor'
+import { Room, PathSegment, CoordinateFormat } from '../../types/room'
 import { calculateGridBounds, compareXLabels } from './grid-utils'
 import { validateCabinetBounds } from './cabinet-utils'
 

@@ -9,4 +9,9 @@ export default defineConfig({
         copyPublicDir: true,
     },
     publicDir: 'public',
+    server: {
+        fs: {
+            strict: false
+        }
+    }
 });

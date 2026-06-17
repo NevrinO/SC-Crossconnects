@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { Room } from '../types/editor'
+import { Room } from '../../types/room'
 import { validateRoomStructure } from '../lib/validation'
 
 export interface ImportResult {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GridPoint, PathSegment } from '../types/editor'
+import { GridPoint, PathSegment } from '../../types/room'
 
 interface SegmentFormProps {
   isOpen: boolean

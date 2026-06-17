@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Room, CoordinateFormat, Orientation, StartCorner } from '../types/editor'
+import { Room, CoordinateFormat, Orientation, StartCorner } from '../../types/room'
 
 interface NewRoomFormProps {
   existingRooms: Room[]

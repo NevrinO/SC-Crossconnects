@@ -1,4 +1,4 @@
-import { Room, CoordinateFormat } from '../types/editor'
+import { Room, CoordinateFormat } from '../../types/room'
 
 export interface GridBounds {
   minX: string

@@ -6,16 +6,19 @@ if (localStorage.getItem('theme') === 'dark') {
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App.tsx'
+import ConfigToolApp from './config-tool/App.tsx'
+import SimplePasswordGate from './components/SimplePasswordGate'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
+        <Route path="/" element={<SimplePasswordGate><App /></SimplePasswordGate>} />
+        <Route path="/config/*" element={<ConfigToolApp />} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   </React.StrictMode>,
 )
