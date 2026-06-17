@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Room } from '../types/editor'
+import { Room } from '../../types/room'
 import { letterLabelToIndex, generateLetterRange, calculateGridBounds } from '../lib/grid-utils'
 
 interface RoomStatisticsDashboardProps {

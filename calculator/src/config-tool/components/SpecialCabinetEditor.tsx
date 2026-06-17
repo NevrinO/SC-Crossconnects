@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Room, SpecialCabinets, Cabinet } from '../types/editor'
+import { Room, SpecialCabinets, Cabinet } from '../../types/room'
 import { expandCabinetRange, validateCabinetBounds, parseCabinetCoordinate } from '../lib/cabinet-utils'
 
 interface SpecialCabinetEditorProps {

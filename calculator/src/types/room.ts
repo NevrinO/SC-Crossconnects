@@ -1,4 +1,6 @@
 export type CoordinateFormat = 'letters-first' | 'numbers-first';
+export type Orientation = 'numbers-vertical' | 'numbers-horizontal';
+export type StartCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface GridPoint {
   x: string;  // Row letter (e.g., "FZ", "GG")

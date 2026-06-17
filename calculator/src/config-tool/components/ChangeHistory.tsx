@@ -1,4 +1,4 @@
-import { PathSegment } from '../types/editor'
+import { PathSegment } from '../../types/room'
 import { deepEqual } from '../lib/deep-equal'
 
 interface Change {

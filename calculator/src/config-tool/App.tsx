@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { RoomSelector } from './components/RoomSelector'
 import { GridEditor } from './components/GridEditor'
 import { SegmentTable } from './components/SegmentTable'
@@ -9,7 +10,7 @@ import { ValidationSummaryPanel } from './components/ValidationSummaryPanel'
 import { RoomStatisticsDashboard } from './components/RoomStatisticsDashboard'
 import { ChangeHistory } from './components/ChangeHistory'
 import { useAutoSave } from './hooks/useAutoSave'
-import { Room, PathSegment, Cabinet } from './types/editor'
+import { Room, PathSegment, Cabinet } from '../types/room'
 import { Toaster } from 'react-hot-toast'
 import { showError, showSuccess } from './lib/toast'
 import { deepEqual } from './lib/deep-equal'
@@ -440,6 +441,12 @@ function App() {
               Clear backup
             </button>
           )}
+          <Link
+            to="/"
+            className="text-sm text-gray-600 hover:text-gray-800 underline"
+          >
+            Calculator
+          </Link>
         </div>
       </div>
       

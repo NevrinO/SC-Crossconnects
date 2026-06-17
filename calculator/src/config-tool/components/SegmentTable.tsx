@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PathSegment } from '../types/editor'
+import { PathSegment } from '../../types/room'
 import { validateSegmentHeights } from '../lib/validation'
 import { showSuccess, showError } from '../lib/toast'
 

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import roomsData from './data/rooms.json';
 import type { Room, CalculationResult } from './types/room';
 import { calculateManual, validateRackLocationInput } from './lib/calculation';
@@ -287,6 +288,12 @@ export default function App() {
           >
             Legacy Version
           </button>
+          <Link
+            to="/config"
+            className="text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            Config Tool
+          </Link>
         </div>
       </div>
 

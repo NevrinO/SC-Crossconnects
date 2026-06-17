@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Room } from '../types/editor'
+import { Room } from '../../types/room'
 import { useRoomImport } from '../hooks/useRoomImport'
 
 interface FileOperationsProps {

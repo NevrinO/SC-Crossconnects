@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Room, GridPoint, PathSegment, Cabinet } from '../types/editor'
+import { Room, GridPoint, PathSegment, Cabinet } from '../../types/room'
 import { calculateGridBounds, compareXLabels } from '../lib/grid-utils'
 import { SegmentForm } from './SegmentForm'
 import { showSuccess, showError } from '../lib/toast'

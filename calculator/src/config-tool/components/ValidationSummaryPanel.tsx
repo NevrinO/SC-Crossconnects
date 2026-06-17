@@ -1,4 +1,4 @@
-import { Room } from '../types/editor'
+import { Room } from '../../types/room'
 import { validateRoom, ValidationError } from '../lib/validation'
 
 interface ValidationSummaryPanelProps {

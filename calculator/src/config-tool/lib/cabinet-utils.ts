@@ -1,4 +1,4 @@
-import { CoordinateFormat } from '../types/editor'
+import { CoordinateFormat } from '../../types/room'
 import { compareXLabels, generateLetterRange } from './grid-utils'
 
 /**
